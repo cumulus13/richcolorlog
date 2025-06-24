@@ -241,16 +241,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Changelog
-
-### v1.0.0
-- Initial release
-- Basic Rich logging functionality
-- Custom log levels
-- Dual console/file output
-- Syntax highlighting support
-- Enhanced tracebacks
-
 ## Acknowledgments
 
 - [Rich](https://github.com/Textualize/rich) - For the amazing terminal formatting library
