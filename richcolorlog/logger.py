@@ -280,12 +280,24 @@ def setup_logging(
     
     # print(f"Setting up logging with level: {level}, show_locals: {show_locals}, logfile: {logfile}, lexer: {lexer}")
     # Auto-generate logfile name if not provided
+    # if logfile is None:
+    #     try:
+    #         main_file = inspect.stack()[-1].filename
+    #         base = os.path.splitext(os.path.basename(main_file))[0]
+    #         logfile = f"{base}.log"
+    #     except (IndexError, AttributeError):
+    #         logfile = "app.log"
+    
     if logfile is None:
         try:
             main_file = inspect.stack()[-1].filename
-            base = os.path.splitext(os.path.basename(main_file))[0]
-            logfile = f"{base}.log"
-        except (IndexError, AttributeError):
+            # Check if it contains an invalid character or not a python file
+            if not main_file or main_file.startswith('<') or not main_file.endswith(('.py', '.pyc')):
+                logfile = "app.log"
+            else:
+                base = os.path.splitext(os.path.basename(main_file))[0]
+                logfile = f"{base}.log"
+        except Exception as e:
             logfile = "app.log"
     
     # Setup Rich handler for console
