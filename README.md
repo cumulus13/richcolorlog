@@ -71,8 +71,8 @@ from rich_logger import setup_logging
 # Setup with custom options
 logger = setup_logging(
     show_locals=True,      # Show local variables in tracebacks
-    logfile="my_app.log",  # Custom log file name
-    lexer="python",        # Syntax highlighting for Python code
+    logfile="my_app.log",  # Custom log file name, option default file name [dot] log
+    lexer="python",        # Syntax highlighting for Python code, option default None
     level=logging.INFO     # Set minimum log level
 )
 
