@@ -60,6 +60,8 @@ logger = setup_logging_custom()
 
 ### Advanced Configuration
 
+#### Using Custom Formatter (rich)
+
 ```python
 import logging
 from rich_logger import setup_logging
@@ -71,6 +73,11 @@ logger = setup_logging(
     lexer="python",        # Syntax highlighting for Python code
     level=logging.INFO     # Set minimum log level
 )
+
+# Log with syntax highlighting
+logger.info("Here's some Python code:", extra={"lexer": "python"})
+logger.info("def hello_world():\n    print('Hello, World!')")
+```
 
 other parameters:
 
@@ -94,12 +101,7 @@ other parameters:
  - keywords: Optional[List[str]] = None
  - show_background = True
 
-# Log with syntax highlighting
-logger.info("Here's some Python code:", extra={"lexer": "python"})
-logger.info("def hello_world():\n    print('Hello, World!')")
-```
-
-### Using Custom Formatter (ANSI Colors)
+#### Using Custom Formatter (ANSI Colors)
 
 ```python
 from rich_logger import setup_logging_custom
