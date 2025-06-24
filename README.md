@@ -2,6 +2,8 @@
 
 A beautiful and feature-rich logging package using the [Rich](https://github.com/Textualize/rich) library for enhanced console output and file logging.
 
+[![Screenshot](./screenshot.png)](./screenshot.png)
+
 ## Features
 
 - 🎨 **Beautiful console output** with Rich formatting
