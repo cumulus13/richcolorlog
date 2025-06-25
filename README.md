@@ -36,7 +36,7 @@ pip install -e .
 
 ```python
 import logging
-from rich_logger import setup_logging
+from richcolorlog import setup_logging
 
 # Setup the logger use with rich library
 logger = setup_logging()
@@ -66,14 +66,14 @@ logger = setup_logging_custom()
 
 ```python
 import logging
-from rich_logger import setup_logging
+from richcolorlog import setup_logging
 
 # Setup with custom options
 logger = setup_logging(
     show_locals=True,      # Show local variables in tracebacks
     logfile="my_app.log",  # Custom log file name, option default file name [dot] log
     lexer="python",        # Syntax highlighting for Python code, option default None
-    level=logging.INFO     # Set minimum log level
+    level=logging.INFO     # Set minimum log level or just 'INFO'
 )
 
 # Log with syntax highlighting
@@ -106,7 +106,7 @@ other parameters:
 #### Using Custom Formatter (ANSI Colors)
 
 ```python
-from rich_logger import setup_logging_custom
+from richcolorlog import setup_logging_custom
 
 # Setup basic logging with ANSI color codes
 logger = setup_logging_custom()
@@ -115,7 +115,7 @@ logger.info("This will be colored in the terminal")
 
 other parameters:
 
- - level = 'DEBUG'
+ - level = Union[str, int] #example: 'DEBUG' or 'logging.DEBUG'
  - show_background = True
  - format_template=None
  - show_time=True
@@ -163,7 +163,7 @@ You can use any lexer supported by Pygments for syntax highlighting:
 
 ```python
 import logging
-from rich_logger import setup_logging
+from richcolorlog import setup_logging
 
 logger = setup_logging(show_locals=True)
 
@@ -184,7 +184,7 @@ divide_numbers(10, 0)
 
 ```python
 import logging
-from rich_logger import setup_logging, get_def
+from richcolorlog import setup_logging, get_def
 
 logger = setup_logging()
 
@@ -201,7 +201,7 @@ obj.my_method()
 
 ```python
 import logging
-from rich_logger import setup_logging
+from richcolorlog import setup_logging
 
 logger = setup_logging()
 

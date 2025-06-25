@@ -212,7 +212,7 @@ else:
     CustomRichFormatter = CustomFormatter
 
 def setup_logging_custom(
-    level = 'DEBUG',
+    level: Union[str, int] = 'DEBUG',
     show_background = True,
     format_template=None,
     show_time=True,
@@ -222,7 +222,10 @@ def setup_logging_custom(
     show_path=True
     ):
     """Setup basic logging with custom formatter (ANSI colors)."""
-    logging.basicConfig(level=getattr(logging, level))
+    if isinstance(level, str):
+        logging.basicConfig(level=getattr(logging, level))
+    else:
+        logging.basicConfig(level=level)
     logger = logging.getLogger()
 
     # Update handlers with custom formatter
@@ -244,7 +247,7 @@ def setup_logging(
     lexer: Optional[str] = None,
     logfile: Optional[str] = None, 
     show_locals: bool = False, 
-    level: int = logging.DEBUG,
+    level: Union[str, int] = 'DEBUG',
     show_level: bool = False,
     show_time: bool = True,
     omit_repeated_times: bool = True,
@@ -287,6 +290,11 @@ def setup_logging(
     #         logfile = f"{base}.log"
     #     except (IndexError, AttributeError):
     #         logfile = "app.log"
+    
+    if isinstance(level, str):
+        logging.basicConfig(level=getattr(logging, level))
+    else:
+        logging.basicConfig(level=level)
     
     if logfile is None:
         try:
