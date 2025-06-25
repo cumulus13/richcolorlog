@@ -14,6 +14,9 @@ this_directory = os.path.abspath(os.path.dirname(__file__))
 
 if (Path(__file__).parent / '__version__.py').is_file():
     shutil.copy(str((Path(__file__).parent / '__version__.py')), os.path.join(this_directory, NAME, '__version__.py'))
+
+if (Path(__file__).parent / 'screenshot.png').is_file():
+    shutil.copy(str((Path(__file__).parent / 'screenshot.png')), os.path.join(this_directory, NAME, 'screenshot.png'))
     
 # Read the contents of README file
 with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
