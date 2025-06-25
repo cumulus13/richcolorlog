@@ -2,7 +2,7 @@
 
 A beautiful and feature-rich logging package using the [Rich](https://github.com/Textualize/rich) library for enhanced console output and file logging.
 
-[![Screenshot](https://raw.githubusercontent.com/cumulus13/richcolorlog/main/screenshot.png)](https://raw.githubusercontent.com/cumulus13/richcolorlog/main/screenshot.png)
+[![Screenshot](https://raw.githubusercontent.com/cumulus13/richcolorlog/master/screenshot.png)](https://raw.githubusercontent.com/cumulus13/richcolorlog/master/screenshot.png)
 
 ## Features
 
