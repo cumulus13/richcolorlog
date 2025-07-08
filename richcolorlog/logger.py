@@ -267,6 +267,7 @@ def setup_logging(
     log_time_format: Union[str, FormatTimeCallable] = "[%x %X]",
     keywords: Optional[List[str]] = None,
     show_background = True,
+    exceptions = []
 ) -> logging.Logger:
     """
     Setup enhanced logging with Rich formatting.
@@ -290,6 +291,10 @@ def setup_logging(
     #         logfile = f"{base}.log"
     #     except (IndexError, AttributeError):
     #         logfile = "app.log"
+
+    if exceptions:
+        for i in exceptions:
+            logging.getLogger(str(i)).setLevel('CRITICAL')
     
     if isinstance(level, str):
         logging.basicConfig(level=getattr(logging, level))
