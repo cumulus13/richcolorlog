@@ -219,13 +219,19 @@ def setup_logging_custom(
     show_name=True,
     show_pid=True,
     show_level=True,
-    show_path=True
+    show_path=True,
+    exceptions = []
     ):
     """Setup basic logging with custom formatter (ANSI colors)."""
     if isinstance(level, str):
         logging.basicConfig(level=getattr(logging, level))
     else:
         logging.basicConfig(level=level)
+
+    if exceptions:
+        for i in exceptions:
+            if isinstance(i, str): logging.getLogger(str(i)).setLevel('CRITICAL')
+
     logger = logging.getLogger()
 
     # Update handlers with custom formatter
@@ -294,7 +300,7 @@ def setup_logging(
 
     if exceptions:
         for i in exceptions:
-            logging.getLogger(str(i)).setLevel('CRITICAL')
+            if isinstance(i, str): logging.getLogger(str(i)).setLevel('CRITICAL')
     
     if isinstance(level, str):
         logging.basicConfig(level=getattr(logging, level))
