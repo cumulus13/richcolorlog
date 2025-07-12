@@ -58,6 +58,18 @@ class CustomFormatter(logging.Formatter):
         show_level=True,
         show_path=True,
     ):
+        """
+        Initialize CustomFormatter with color formatting options.
+        
+        Args:
+            show_background (bool): Whether to show background colors for log levels
+            format_template (str, optional): Custom format template string
+            show_time (bool): Whether to show timestamp in logs
+            show_name (bool): Whether to show logger name in logs
+            show_pid (bool): Whether to show process ID in logs
+            show_level (bool): Whether to show log level in logs
+            show_path (bool): Whether to show file path and line number in logs
+        """
         super().__init__()
         # Build format template based on flags if not provided
         if format_template:
@@ -77,9 +89,8 @@ class CustomFormatter(logging.Formatter):
                 parts.append("(%(filename)s:%(lineno)d)")
             self.FORMAT_TEMPLATE = " - ".join(parts)
 
-        # The rest of the constructor continues below...if not show_background:
+        # Remove background colors for all levels except those that are foreground only
         if not show_background:
-            # Remove background colors for all levels except those that are foreground only
             self.COLORS.update({
                 'warning': "\x1b[38;2;255;255;0m",    # yellow
                 'error': "\x1b[31m",                  # red
@@ -104,6 +115,15 @@ class CustomFormatter(logging.Formatter):
         }
 
     def format(self, record):
+        """
+        Format a log record with appropriate color coding.
+        
+        Args:
+            record (logging.LogRecord): The log record to format
+            
+        Returns:
+            str: The formatted log message with ANSI color codes
+        """
         formatter = self.formatters.get(record.levelno)
         if formatter:
             return formatter.format(record)
@@ -125,7 +145,13 @@ logging.addLevelName(NOTICE_LEVEL, "NOTICE")
 
 
 def _add_custom_level_method(level_name: str, level_value: int):
-    """Add a custom logging method to the Logger class."""
+    """
+    Add a custom logging method to the Logger class.
+    
+    Args:
+        level_name (str): Name of the custom log level
+        level_value (int): Numeric value for the log level
+    """
     def log_method(self, message, *args, **kwargs):
         if self.isEnabledFor(level_value):
             self._log(level_value, message, args, **kwargs)
@@ -158,7 +184,14 @@ if RICH_AVAILABLE:
             CRITICAL_LEVEL: "bright_white on #550000",
         }
         
-        def __init__(self, lexer = None, show_background = True):
+        def __init__(self, lexer=None, show_background=True):
+            """
+            Initialize CustomRichFormatter with syntax highlighting options.
+            
+            Args:
+                lexer (str, optional): Syntax highlighter lexer name (e.g., 'python', 'javascript')
+                show_background (bool): Whether to show background colors for log levels
+            """
             super().__init__()
             # Define styles for different log levels
             self.lexer = lexer
@@ -176,7 +209,15 @@ if RICH_AVAILABLE:
                 })
         
         def format(self, record):
-            """Format log record with Rich styling and optional syntax highlighting."""
+            """
+            Format log record with Rich styling and optional syntax highlighting.
+            
+            Args:
+                record (logging.LogRecord): The log record to format
+                
+            Returns:
+                rich.text.Text: The formatted log message with Rich styling
+            """
             lexer = getattr(record, "lexer", self.lexer or None)
             level_style = self.LEVEL_STYLES.get(record.levelno, "")
             prefix = f"{record.levelname} - ({record.filename}:{record.lineno}) "
@@ -213,16 +254,32 @@ else:
 
 def setup_logging_custom(
     level: Union[str, int] = 'DEBUG',
-    show_background = True,
+    show_background=True,
     format_template=None,
     show_time=True,
     show_name=True,
     show_pid=True,
     show_level=True,
     show_path=True,
-    exceptions = []
-    ):
-    """Setup basic logging with custom formatter (ANSI colors)."""
+    exceptions=[]
+):
+    """
+    Setup basic logging with custom formatter (ANSI colors).
+    
+    Args:
+        level (Union[str, int]): Logging level (e.g., 'DEBUG', logging.DEBUG)
+        show_background (bool): Whether to show background colors for log levels
+        format_template (str, optional): Custom format template string
+        show_time (bool): Whether to show timestamp in logs
+        show_name (bool): Whether to show logger name in logs
+        show_pid (bool): Whether to show process ID in logs
+        show_level (bool): Whether to show log level in logs
+        show_path (bool): Whether to show file path and line number in logs
+        exceptions (list): List of logger names to set to CRITICAL level
+        
+    Returns:
+        logging.Logger: Configured logger instance
+    """
     if isinstance(level, str):
         logging.basicConfig(level=getattr(logging, level))
     else:
@@ -230,7 +287,8 @@ def setup_logging_custom(
 
     if exceptions:
         for i in exceptions:
-            if isinstance(i, str): logging.getLogger(str(i)).setLevel('CRITICAL')
+            if isinstance(i, str): 
+                logging.getLogger(str(i)).setLevel('CRITICAL')
 
     logger = logging.getLogger()
 
@@ -259,7 +317,7 @@ def setup_logging(
     omit_repeated_times: bool = True,
     show_path: bool = True,
     enable_link_path: bool = True,
-    highlighter = None,
+    highlighter=None,
     markup: bool = False,
     rich_tracebacks: bool = False,
     tracebacks_width: Optional[int] = None,
@@ -272,20 +330,40 @@ def setup_logging(
     locals_max_string: int = 80,
     log_time_format: Union[str, FormatTimeCallable] = "[%x %X]",
     keywords: Optional[List[str]] = None,
-    show_background = True,
-    exceptions = []
+    show_background=True,
+    exceptions=[]
 ) -> logging.Logger:
     """
     Setup enhanced logging with Rich formatting.
     
     Args:
-        show_locals: Show local variables in tracebacks
-        logfile: Path to log file (auto-generated if None)
-        lexer: Syntax highlighter for code (e.g., 'python', 'javascript')
-        level: Logging level
+        lexer (str, optional): Syntax highlighter for code (e.g., 'python', 'javascript')
+        logfile (str, optional): Path to log file (auto-generated if None)
+        show_locals (bool): Show local variables in tracebacks
+        level (Union[str, int]): Logging level (e.g., 'DEBUG', logging.DEBUG)
+        show_level (bool): Whether to show log level in console output
+        show_time (bool): Whether to show timestamp in console output
+        omit_repeated_times (bool): Whether to omit repeated timestamps
+        show_path (bool): Whether to show file path in console output
+        enable_link_path (bool): Whether to enable clickable file paths
+        highlighter: Rich highlighter instance
+        markup (bool): Whether to enable Rich markup in log messages
+        rich_tracebacks (bool): Whether to use Rich formatted tracebacks
+        tracebacks_width (int, optional): Width of traceback display
+        tracebacks_extra_lines (int): Extra lines to show in tracebacks
+        tracebacks_theme (str, optional): Theme for traceback syntax highlighting
+        tracebacks_word_wrap (bool): Whether to wrap long lines in tracebacks
+        tracebacks_show_locals (bool): Whether to show local variables in tracebacks
+        tracebacks_suppress (Iterable): Modules to suppress in tracebacks
+        locals_max_length (int): Maximum length of local variable representations
+        locals_max_string (int): Maximum length of string representations
+        log_time_format (Union[str, FormatTimeCallable]): Time format for logs
+        keywords (List[str], optional): Keywords to highlight in logs
+        show_background (bool): Whether to show background colors for log levels
+        exceptions (list): List of logger names to set to CRITICAL level
         
     Returns:
-        Configured logger instance
+        logging.Logger: Configured logger instance
     """
     
     # print(f"Setting up logging with level: {level}, show_locals: {show_locals}, logfile: {logfile}, lexer: {lexer}")
@@ -300,7 +378,8 @@ def setup_logging(
 
     if exceptions:
         for i in exceptions:
-            if isinstance(i, str): logging.getLogger(str(i)).setLevel('CRITICAL')
+            if isinstance(i, str): 
+                logging.getLogger(str(i)).setLevel('CRITICAL')
     
     if isinstance(level, str):
         logging.basicConfig(level=getattr(logging, level))
@@ -321,24 +400,24 @@ def setup_logging(
     
     # Setup Rich handler for console
     rich_handler = RichHandler(
-        show_time = show_time,
-        omit_repeated_times = omit_repeated_times,
-        show_level = show_level,
-        show_path = show_path,
-        enable_link_path = enable_link_path,
-        highlighter = highlighter,
-        markup = markup,
-        rich_tracebacks = rich_tracebacks,
-        tracebacks_width = tracebacks_width or shutil.get_terminal_size()[0],
-        tracebacks_extra_lines = tracebacks_extra_lines,
-        tracebacks_theme = tracebacks_theme or 'fruity',
-        tracebacks_word_wrap = tracebacks_word_wrap,
-        tracebacks_show_locals = tracebacks_show_locals,
-        tracebacks_suppress = tracebacks_suppress,
-        locals_max_length = locals_max_length,
-        locals_max_string = locals_max_string,
-        log_time_format = log_time_format,
-        keywords = keywords,
+        show_time=show_time,
+        omit_repeated_times=omit_repeated_times,
+        show_level=show_level,
+        show_path=show_path,
+        enable_link_path=enable_link_path,
+        highlighter=highlighter,
+        markup=markup,
+        rich_tracebacks=rich_tracebacks,
+        tracebacks_width=tracebacks_width or shutil.get_terminal_size()[0],
+        tracebacks_extra_lines=tracebacks_extra_lines,
+        tracebacks_theme=tracebacks_theme or 'fruity',
+        tracebacks_word_wrap=tracebacks_word_wrap,
+        tracebacks_show_locals=tracebacks_show_locals,
+        tracebacks_suppress=tracebacks_suppress,
+        locals_max_length=locals_max_length,
+        locals_max_string=locals_max_string,
+        log_time_format=log_time_format,
+        keywords=keywords,
     )
     rich_handler._log_render.emojis = False
     rich_handler.setFormatter(CustomRichFormatter(lexer, show_background))
@@ -377,7 +456,7 @@ def get_def() -> str:
     Get current function/class definition name for logging context.
     
     Returns:
-        Formatted string with function/class context
+        str: Formatted string with function/class context information
     """
     name = ''
     
@@ -431,6 +510,7 @@ def get_def() -> str:
     return name or "unknown"
 
 def test():
+    """Test function to verify logger setup with different configurations."""
     logger = setup_logging_custom()
     try:
         console.print("[italic]Test function to verify logger setup (CustomFormatter).[/]\n")
@@ -447,7 +527,7 @@ def test():
     logger.info("This is an info message")
     print("=" * shutil.get_terminal_size()[0])
     
-    logger = setup_logging_custom(show_background = False)
+    logger = setup_logging_custom(show_background=False)
     try:
         console.print("[italic]Test function to verify logger setup (CustomFormatter), No Background Color.[/]\n")
     except:
@@ -480,7 +560,7 @@ def test():
     logger.info("This is an info message")
     print("=" * shutil.get_terminal_size()[0])
     
-    logger = setup_logging(show_background = False)
+    logger = setup_logging(show_background=False)
     
     try:
         console.print("[italic]Test function to verify logger setup (CustomRichFormatter), No Background Color.[/]\n")
