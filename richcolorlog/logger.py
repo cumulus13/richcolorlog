@@ -309,6 +309,7 @@ def setup_logging_custom(
 
 def setup_logging(
     lexer: Optional[str] = None,
+    logtofile: bool = False,
     logfile: Optional[str] = None, 
     show_locals: bool = False, 
     level: Union[str, int] = 'DEBUG',
@@ -353,7 +354,7 @@ def setup_logging(
         tracebacks_extra_lines (int): Extra lines to show in tracebacks
         tracebacks_theme (str, optional): Theme for traceback syntax highlighting
         tracebacks_word_wrap (bool): Whether to wrap long lines in tracebacks
-        tracebacks_show_locals (bool): Whether to show local variables in tracebacks
+        tracebacks_show_locals (bool): Whether to show local variables in tracebacks, same as `show_locals`
         tracebacks_suppress (Iterable): Modules to suppress in tracebacks
         locals_max_length (int): Maximum length of local variable representations
         locals_max_string (int): Maximum length of string representations
@@ -385,7 +386,7 @@ def setup_logging(
         logging.basicConfig(level=getattr(logging, level))
     else:
         logging.basicConfig(level=level)
-    
+    # console.log(f"logtofile = {logtofile}, logfile = {logfile}")
     if logfile is None:
         try:
             main_file = inspect.stack()[-1].filename
@@ -397,7 +398,7 @@ def setup_logging(
                 logfile = f"{base}.log"
         except Exception as e:
             logfile = "app.log"
-    
+    # console.log(f"logtofile = {logtofile}, logfile = {logfile}")
     # Setup Rich handler for console
     rich_handler = RichHandler(
         show_time=show_time,
@@ -412,7 +413,7 @@ def setup_logging(
         tracebacks_extra_lines=tracebacks_extra_lines,
         tracebacks_theme=tracebacks_theme or 'fruity',
         tracebacks_word_wrap=tracebacks_word_wrap,
-        tracebacks_show_locals=tracebacks_show_locals,
+        tracebacks_show_locals=show_locals or tracebacks_show_locals,
         tracebacks_suppress=tracebacks_suppress,
         locals_max_length=locals_max_length,
         locals_max_string=locals_max_string,
@@ -422,18 +423,19 @@ def setup_logging(
     rich_handler._log_render.emojis = False
     rich_handler.setFormatter(CustomRichFormatter(lexer, show_background))
 
-    # Setup file handler
-    file_handler = logging.FileHandler(logfile, encoding="utf-8")
-    file_handler.setFormatter(logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
-    ))
+    if logtofile:
+        # Setup file handler
+        file_handler = logging.FileHandler(logfile, encoding="utf-8")
+        file_handler.setFormatter(logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+        ))
 
     # Configure root logger
     logger = logging.getLogger()
     logger.setLevel(level)
     logger.handlers.clear()
     logger.addHandler(rich_handler)
-    logger.addHandler(file_handler)
+    if logtofile: logger.addHandler(file_handler)
     
     # Patch RichHandler to handle Text objects properly
     def custom_render_message(self, record, message):
@@ -543,7 +545,7 @@ def test():
     logger.info("This is an info message")
     print("=" * shutil.get_terminal_size()[0])
     
-    logger = setup_logging()
+    logger = setup_logging(logtofile=True)
     
     try:
         console.print("[italic]Test function to verify logger setup (CustomRichFormatter).[/]\n")
