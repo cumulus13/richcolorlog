@@ -136,6 +136,11 @@ CRITICAL_LEVEL = FATAL_LEVEL + 1
 ALERT_LEVEL = CRITICAL_LEVEL + 1
 NOTICE_LEVEL = ALERT_LEVEL + 1
 
+DEBUG = logging.DEBUG
+ERROR = logging.ERROR
+INFO = logging.INFO
+WARNING = logging.WARNING
+
 # Add custom level names
 logging.addLevelName(EMERGENCY_LEVEL, "EMERGENCY")
 logging.addLevelName(FATAL_LEVEL, "FATAL")
@@ -308,6 +313,7 @@ def setup_logging_custom(
     return logger
 
 def setup_logging(
+    name: Optional[str] = None,
     lexer: Optional[str] = None,
     logtofile: bool = False,
     logfile: Optional[str] = None, 
@@ -377,6 +383,7 @@ def setup_logging(
     #     except (IndexError, AttributeError):
     #         logfile = "app.log"
 
+    self.name = name
     if exceptions:
         for i in exceptions:
             if isinstance(i, str): 
@@ -431,7 +438,7 @@ def setup_logging(
         ))
 
     # Configure root logger
-    logger = logging.getLogger()
+    logger = logging.getLogger(self.name)
     logger.setLevel(level)
     logger.handlers.clear()
     logger.addHandler(rich_handler)
