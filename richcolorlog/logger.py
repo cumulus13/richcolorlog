@@ -383,7 +383,6 @@ def setup_logging(
     #     except (IndexError, AttributeError):
     #         logfile = "app.log"
 
-    self.name = name
     if exceptions:
         for i in exceptions:
             if isinstance(i, str): 
@@ -438,7 +437,7 @@ def setup_logging(
         ))
 
     # Configure root logger
-    logger = logging.getLogger(self.name)
+    logger = logging.getLogger(name)
     logger.setLevel(level)
     logger.handlers.clear()
     logger.addHandler(rich_handler)
