@@ -609,11 +609,11 @@ def run_test():
     # Example usage of get_def
     print(f"get_def(): {get_def()}")
     try:
-        from . example_usage import main, ExampleClass
+        from . example_usage import main as example, ExampleClass
     except Exception as e:
-        from example_usage import main, ExampleClass
+        from example_usage import main as example, ExampleClass
 
-    main()
+    example()
     
     # Test class-based logging
     obj = ExampleClass()
