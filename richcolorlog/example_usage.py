@@ -4,7 +4,7 @@ Example usage of the rich-logger package.
 """
 
 import logging
-from rich_logger import setup_logging, get_def
+from richcolorlog import setup_logging, get_def
 
 
 def main():

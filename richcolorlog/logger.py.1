@@ -28,7 +28,21 @@ try:
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
+
+# Check for NO_COLORS environment variable
+def _should_disable_colors():
+    """Check if colors should be disabled based on environment variable."""
+    no_colors = os.environ.get('NO_COLORS', '')
+    return no_colors in ['1', 'true', 'True', 'TRUE', 'yes', 'Yes', 'YES']
+
+def _should_disable_logging():
+    """Check if logging should be disabled based on environment variables."""
+    no_logging = os.environ.get('NO_LOGGING', '')
+    logging_disabled = os.environ.get('LOGGING', '')
     
+    return (no_logging in ['1', 'true', 'True', 'TRUE', 'yes', 'Yes', 'YES'] or 
+            logging_disabled in ['0', 'false', 'False', 'FALSE', 'no', 'No', 'NO'])
+
 class CustomFormatter(logging.Formatter):
     """Custom formatter with ANSI color codes for different log levels."""
     
@@ -57,6 +71,7 @@ class CustomFormatter(logging.Formatter):
         show_pid=True,
         show_level=True,
         show_path=True,
+        disable_colors=None,
     ):
         """
         Initialize CustomFormatter with color formatting options.
@@ -69,8 +84,14 @@ class CustomFormatter(logging.Formatter):
             show_pid (bool): Whether to show process ID in logs
             show_level (bool): Whether to show log level in logs
             show_path (bool): Whether to show file path and line number in logs
+            disable_colors (bool, optional): Override to disable colors. If None, checks NO_COLORS env var
         """
         super().__init__()
+        
+        # Check if colors should be disabled
+        if disable_colors is None:
+            disable_colors = _should_disable_colors()
+        
         # Build format template based on flags if not provided
         if format_template:
             self.FORMAT_TEMPLATE = format_template
@@ -89,17 +110,22 @@ class CustomFormatter(logging.Formatter):
                 parts.append("(%(filename)s:%(lineno)d)")
             self.FORMAT_TEMPLATE = " - ".join(parts)
 
-        # Remove background colors for all levels except those that are foreground only
-        if not show_background:
-            self.COLORS.update({
-                'warning': "\x1b[38;2;255;255;0m",    # yellow
-                'error': "\x1b[31m",                  # red
-                'critical': "\x1b[38;2;85;0;0m",      # #550000
-                'fatal': "\x1b[38;2;0;85;255m",       # #0055FF
-                'emergency': "\x1b[38;2;170;0;255m",  # #aa00ff
-                'alert': "\x1b[38;2;0;85;0m",         # #005500
-                'notice': "\x1b[38;2;0;255;255m",     # #00ffff
-            })
+        # If colors are disabled, use empty color codes
+        if disable_colors:
+            colors = {key: "" for key in self.COLORS.keys()}
+        else:
+            colors = self.COLORS.copy()
+            # Remove background colors for all levels except those that are foreground only
+            if not show_background:
+                colors.update({
+                    'warning': "\x1b[38;2;255;255;0m",    # yellow
+                    'error': "\x1b[31m",                  # red
+                    'critical': "\x1b[38;2;85;0;0m",      # #550000
+                    'fatal': "\x1b[38;2;0;85;255m",       # #0055FF
+                    'emergency': "\x1b[38;2;170;0;255m",  # #aa00ff
+                    'alert': "\x1b[38;2;0;85;0m",         # #005500
+                    'notice': "\x1b[38;2;0;255;255m",     # #00ffff
+                })
         
         self.formatters = {
             logging.DEBUG: logging.Formatter(self.COLORS['debug'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
@@ -113,6 +139,18 @@ class CustomFormatter(logging.Formatter):
             ALERT_LEVEL: logging.Formatter(self.COLORS['alert'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
             NOTICE_LEVEL: logging.Formatter(self.COLORS['notice'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
         }
+        
+        # Add custom levels after they're defined
+        if 'CRITICAL_LEVEL' in globals():
+            self.formatters[CRITICAL_LEVEL] = logging.Formatter(colors['critical'] + self.FORMAT_TEMPLATE + colors['reset'])
+        if 'EMERGENCY_LEVEL' in globals():
+            self.formatters[EMERGENCY_LEVEL] = logging.Formatter(colors['emergency'] + self.FORMAT_TEMPLATE + colors['reset'])
+        if 'FATAL_LEVEL' in globals():
+            self.formatters[FATAL_LEVEL] = logging.Formatter(colors['fatal'] + self.FORMAT_TEMPLATE + colors['reset'])
+        if 'ALERT_LEVEL' in globals():
+            self.formatters[ALERT_LEVEL] = logging.Formatter(colors['alert'] + self.FORMAT_TEMPLATE + colors['reset'])
+        if 'NOTICE_LEVEL' in globals():
+            self.formatters[NOTICE_LEVEL] = logging.Formatter(colors['notice'] + self.FORMAT_TEMPLATE + colors['reset'])
 
     def format(self, record):
         """
@@ -189,18 +227,28 @@ if RICH_AVAILABLE:
             CRITICAL_LEVEL: "bright_white on #550000",
         }
         
-        def __init__(self, lexer=None, show_background=True):
+        def __init__(self, lexer=None, show_background=True, disable_colors=None):
             """
             Initialize CustomRichFormatter with syntax highlighting options.
             
             Args:
                 lexer (str, optional): Syntax highlighter lexer name (e.g., 'python', 'javascript')
                 show_background (bool): Whether to show background colors for log levels
+                disable_colors (bool, optional): Override to disable colors. If None, checks NO_COLORS env var
             """
             super().__init__()
-            # Define styles for different log levels
+            
+            # Check if colors should be disabled
+            if disable_colors is None:
+                disable_colors = _should_disable_colors()
+            
             self.lexer = lexer
-            if not show_background:
+            self.disable_colors = disable_colors
+            
+            if disable_colors:
+                # Remove all styling when colors are disabled
+                self.LEVEL_STYLES = {key: "" for key in self.LEVEL_STYLES.keys()}
+            elif not show_background:
                 self.LEVEL_STYLES.update({
                     logging.WARNING: "#ffff00",
                     logging.ERROR: "red",
@@ -223,12 +271,17 @@ if RICH_AVAILABLE:
             Returns:
                 rich.text.Text: The formatted log message with Rich styling
             """
+            if self.disable_colors:
+                # Return plain text when colors are disabled
+                log_fmt = f"{record.levelname} - {record.getMessage()} ({record.filename}:{record.lineno})"
+                return Text(log_fmt, style="")
+            
             lexer = getattr(record, "lexer", self.lexer or None)
             level_style = self.LEVEL_STYLES.get(record.levelno, "")
             prefix = f"{record.levelname} - ({record.filename}:{record.lineno}) "
             prefix_text = Text(prefix, style=level_style)
-            # print(f"lexer: {lexer}, level: {record.levelno}, style: {level_style}")
-            if lexer:
+            
+            if lexer and not self.disable_colors:
                 try:
                     # Apply syntax highlighting
                     syntax = Syntax(
@@ -257,20 +310,6 @@ else:
     # Fallback: CustomRichFormatter = CustomFormatter
     CustomRichFormatter = CustomFormatter
 
-def _check_logging_disabled():
-    """Check environment variables to see if logging should be disabled."""
-    NO_LOGGING = os.getenv('NO_LOGGING', '0').lower() in ['1', 'true', 'yes']
-    LOGGING_DISABLED = os.getenv('LOGGING', '1').lower() in ['0', 'false', 'no']
-
-    if NO_LOGGING or LOGGING_DISABLED:
-        # Set a very high level to effectively disable all logging
-        root_logger = logging.getLogger()
-        root_logger.setLevel(logging.CRITICAL + 99999)
-        # Remove all existing handlers to prevent any output
-        root_logger.handlers = []
-        return True
-    return False
-
 def setup_logging_custom(
     level: Union[str, int] = 'DEBUG',
     show_background=True,
@@ -280,7 +319,8 @@ def setup_logging_custom(
     show_pid=True,
     show_level=True,
     show_path=True,
-    exceptions=[]
+    exceptions=[],
+    disable_colors=None
 ):
     """
     Setup basic logging with custom formatter (ANSI colors).
@@ -295,13 +335,15 @@ def setup_logging_custom(
         show_level (bool): Whether to show log level in logs
         show_path (bool): Whether to show file path and line number in logs
         exceptions (list): List of logger names to set to CRITICAL level
+        disable_colors (bool, optional): Override to disable colors. If None, checks NO_COLORS env var
         
     Returns:
         logging.Logger: Configured logger instance
     """
-    if _check_logging_disabled():
-        return logging.getLogger()
-
+    # Check if logging should be disabled
+    if disable_logging is None:
+        disable_logging = _should_disable_logging()
+    
     if isinstance(level, str):
         logging.basicConfig(level=getattr(logging, level))
     else:
@@ -324,6 +366,7 @@ def setup_logging_custom(
                 show_pid,
                 show_level,
                 show_path,
+                disable_colors
             )
         )
     
@@ -355,7 +398,8 @@ def setup_logging(
     log_time_format: Union[str, FormatTimeCallable] = "[%x %X]",
     keywords: Optional[List[str]] = None,
     show_background=True,
-    exceptions=[]
+    exceptions=[],
+    disable_colors=None
 ) -> logging.Logger:
     """
     Setup enhanced logging with Rich formatting.
@@ -385,23 +429,16 @@ def setup_logging(
         keywords (List[str], optional): Keywords to highlight in logs
         show_background (bool): Whether to show background colors for log levels
         exceptions (list): List of logger names to set to CRITICAL level
+        disable_colors (bool, optional): Override to disable colors. If None, checks NO_COLORS env var
         
     Returns:
         logging.Logger: Configured logger instance
     """
-    if _check_logging_disabled():
-        return logging.getLogger()
     
-    # print(f"Setting up logging with level: {level}, show_locals: {show_locals}, logfile: {logfile}, lexer: {lexer}")
-    # Auto-generate logfile name if not provided
-    # if logfile is None:
-    #     try:
-    #         main_file = inspect.stack()[-1].filename
-    #         base = os.path.splitext(os.path.basename(main_file))[0]
-    #         logfile = f"{base}.log"
-    #     except (IndexError, AttributeError):
-    #         logfile = "app.log"
-
+    # Check if colors should be disabled
+    if disable_colors is None:
+        disable_colors = _should_disable_colors()
+    
     if exceptions:
         for i in exceptions:
             if isinstance(i, str): 
@@ -411,7 +448,7 @@ def setup_logging(
         logging.basicConfig(level=getattr(logging, level))
     else:
         logging.basicConfig(level=level)
-    # console.log(f"logtofile = {logtofile}, logfile = {logfile}")
+
     if logfile is None:
         try:
             main_file = inspect.stack()[-1].filename
@@ -423,30 +460,53 @@ def setup_logging(
                 logfile = f"{base}.log"
         except Exception as e:
             logfile = "app.log"
-    # console.log(f"logtofile = {logtofile}, logfile = {logfile}")
+
     # Setup Rich handler for console
-    rich_handler = RichHandler(
-        show_time=show_time,
-        omit_repeated_times=omit_repeated_times,
-        show_level=show_level,
-        show_path=show_path,
-        enable_link_path=enable_link_path,
-        highlighter=highlighter,
-        markup=markup,
-        rich_tracebacks=rich_tracebacks,
-        tracebacks_width=tracebacks_width or shutil.get_terminal_size()[0],
-        tracebacks_extra_lines=tracebacks_extra_lines,
-        tracebacks_theme=tracebacks_theme or 'fruity',
-        tracebacks_word_wrap=tracebacks_word_wrap,
-        tracebacks_show_locals=show_locals or tracebacks_show_locals,
-        tracebacks_suppress=tracebacks_suppress,
-        locals_max_length=locals_max_length,
-        locals_max_string=locals_max_string,
-        log_time_format=log_time_format,
-        keywords=keywords,
-    )
-    rich_handler._log_render.emojis = False
-    rich_handler.setFormatter(CustomRichFormatter(lexer, show_background))
+    # When colors are disabled, create a simpler console without color support
+    if disable_colors and RICH_AVAILABLE:
+        rich_console = Console(color_system=None, highlight=False)
+    elif RICH_AVAILABLE:
+        rich_console = console
+    else:
+        rich_console = None
+    
+    if RICH_AVAILABLE:
+        rich_handler = RichHandler(
+            console=rich_console,
+            show_time=show_time,
+            omit_repeated_times=omit_repeated_times,
+            show_level=show_level,
+            show_path=show_path,
+            enable_link_path=enable_link_path and not disable_colors,
+            highlighter=highlighter if not disable_colors else None,
+            markup=markup and not disable_colors,
+            rich_tracebacks=rich_tracebacks and not disable_colors,
+            tracebacks_width=tracebacks_width or shutil.get_terminal_size()[0],
+            tracebacks_extra_lines=tracebacks_extra_lines,
+            tracebacks_theme=tracebacks_theme or 'fruity' if not disable_colors else 'default',
+            tracebacks_word_wrap=tracebacks_word_wrap,
+            tracebacks_show_locals=show_locals or tracebacks_show_locals,
+            tracebacks_suppress=tracebacks_suppress,
+            locals_max_length=locals_max_length,
+            locals_max_string=locals_max_string,
+            log_time_format=log_time_format,
+            keywords=keywords if not disable_colors else None,
+        )
+        rich_handler._log_render.emojis = False
+        rich_handler.setFormatter(CustomRichFormatter(lexer, show_background, disable_colors))
+    else:
+        # Fallback to standard handler when Rich is not available
+        rich_handler = logging.StreamHandler()
+        rich_handler.setFormatter(CustomFormatter(
+            show_background,
+            None,
+            show_time,
+            True,  # show_name
+            True,  # show_pid
+            show_level,
+            show_path,
+            disable_colors
+        ))
 
     if logtofile:
         # Setup file handler
@@ -462,18 +522,19 @@ def setup_logging(
     logger.addHandler(rich_handler)
     if logtofile: logger.addHandler(file_handler)
     
-    # Patch RichHandler to handle Text objects properly
-    def custom_render_message(self, record, message):
-        use_markup = getattr(record, "markup", self.markup)
-        if isinstance(message, Text):
-            return message
-        else:
-            return Text.from_markup(message) if use_markup else Text(message)
-    
-    # Apply patch to RichHandler
-    for handler in logger.handlers:
-        if isinstance(handler, RichHandler):
-            handler.render_message = custom_render_message.__get__(handler)
+    # Patch RichHandler to handle Text objects properly (only if Rich is available and colors are enabled)
+    if RICH_AVAILABLE and not disable_colors:
+        def custom_render_message(self, record, message):
+            use_markup = getattr(record, "markup", self.markup)
+            if isinstance(message, Text):
+                return message
+            else:
+                return Text.from_markup(message) if use_markup else Text(message)
+        
+        # Apply patch to RichHandler
+        for handler in logger.handlers:
+            if isinstance(handler, RichHandler):
+                handler.render_message = custom_render_message.__get__(handler)
     
     return logger
 
@@ -603,22 +664,8 @@ def test():
     logger.debug("This is a debug message")
     logger.info("This is an info message")
     
-def run_test():
+if __name__ == "__main__":
     # Run test if executed directly
     test()
     # Example usage of get_def
     print(f"get_def(): {get_def()}")
-    try:
-        from . example_usage import main, ExampleClass
-    except Exception as e:
-        from example_usage import main, ExampleClass
-
-    main()
-    
-    # Test class-based logging
-    obj = ExampleClass()
-    result = obj.example_method()
-    print(f"Result: {result}")
-
-if __name__ == "__main__":
-    run_test()

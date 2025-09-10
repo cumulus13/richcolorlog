@@ -95,7 +95,7 @@ setup(
     entry_points = {
         "console_scripts":
             [
-                "richcolorlog = richcolorlog.logger:test",
+                "richcolorlog = richcolorlog.__main__:main",
             ]
     },
     keywords="logging rich console terminal colors formatting",

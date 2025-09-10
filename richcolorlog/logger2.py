@@ -257,20 +257,6 @@ else:
     # Fallback: CustomRichFormatter = CustomFormatter
     CustomRichFormatter = CustomFormatter
 
-def _check_logging_disabled():
-    """Check environment variables to see if logging should be disabled."""
-    NO_LOGGING = os.getenv('NO_LOGGING', '0').lower() in ['1', 'true', 'yes']
-    LOGGING_DISABLED = os.getenv('LOGGING', '1').lower() in ['0', 'false', 'no']
-
-    if NO_LOGGING or LOGGING_DISABLED:
-        # Set a very high level to effectively disable all logging
-        root_logger = logging.getLogger()
-        root_logger.setLevel(logging.CRITICAL + 99999)
-        # Remove all existing handlers to prevent any output
-        root_logger.handlers = []
-        return True
-    return False
-
 def setup_logging_custom(
     level: Union[str, int] = 'DEBUG',
     show_background=True,
@@ -299,9 +285,6 @@ def setup_logging_custom(
     Returns:
         logging.Logger: Configured logger instance
     """
-    if _check_logging_disabled():
-        return logging.getLogger()
-
     if isinstance(level, str):
         logging.basicConfig(level=getattr(logging, level))
     else:
@@ -389,8 +372,6 @@ def setup_logging(
     Returns:
         logging.Logger: Configured logger instance
     """
-    if _check_logging_disabled():
-        return logging.getLogger()
     
     # print(f"Setting up logging with level: {level}, show_locals: {show_locals}, logfile: {logfile}, lexer: {lexer}")
     # Auto-generate logfile name if not provided
@@ -603,22 +584,8 @@ def test():
     logger.debug("This is a debug message")
     logger.info("This is an info message")
     
-def run_test():
+if __name__ == "__main__":
     # Run test if executed directly
     test()
     # Example usage of get_def
     print(f"get_def(): {get_def()}")
-    try:
-        from . example_usage import main, ExampleClass
-    except Exception as e:
-        from example_usage import main, ExampleClass
-
-    main()
-    
-    # Test class-based logging
-    obj = ExampleClass()
-    result = obj.example_method()
-    print(f"Result: {result}")
-
-if __name__ == "__main__":
-    run_test()

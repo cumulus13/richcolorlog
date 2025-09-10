@@ -12,3 +12,6 @@ global-exclude .DS_Store
 global-exclude *.log
 include screenshot.png
 include richcolorlog/screenshot.png
+exclude richcolorlog/logger.py.1
+exclude richcolorlog/logger1.py
+exclude richcolorlog/logger2.py

@@ -31,3 +31,6 @@ traceback.log
 __pycache__/
 *.log
 build.bat
+
+# Added entries (1 items)
+test.log*
