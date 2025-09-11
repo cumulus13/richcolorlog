@@ -28,7 +28,7 @@ try:
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
-    
+        
 class CustomFormatter(logging.Formatter):
     """Custom formatter with ANSI color codes for different log levels."""
     
@@ -477,7 +477,80 @@ def setup_logging(
     
     return logger
 
+class RichColorLogFormatter(CustomFormatter):
+    """
+    Adapter formatter:
+    - Accepts (fmt, datefmt) like logging.Formatter for backward compatibility.
+    - If fmt is provided it will inject %(log_color)s and %(reset)s into the record
+      and delegate formatting to a standard logging.Formatter(fmt, datefmt).
+    - If fmt is None it falls back to CustomFormatter behaviour (level-coloured full template).
+    """
+    def __init__(
+        self,
+        fmt: Optional[str] = None,
+        datefmt: Optional[str] = None,
+        show_background: bool = True,
+        show_time: bool = True,
+        show_name: bool = True,
+        show_pid: bool = True,
+        show_level: bool = True,
+        show_path: bool = True,
+    ):
+        # Initialize CustomFormatter so default behaviour/colours are available
+        # map fmt -> format_template for CustomFormatter if needed (pass None to keep default)
+        super().__init__(
+            show_background=show_background,
+            format_template=None,
+            show_time=show_time,
+            show_name=show_name,
+            show_pid=show_pid,
+            show_level=show_level,
+            show_path=show_path,
+        )
+        self._user_fmt = fmt
+        self._datefmt = datefmt
+        self._base_formatter = logging.Formatter(fmt, datefmt) if fmt else None
+        # expose colour map for convenience
+        self._colors = self.COLORS
 
+    def _level_to_key(self, levelno: int) -> str:
+        if levelno >= EMERGENCY_LEVEL:
+            return "emergency"
+        if levelno >= FATAL_LEVEL:
+            return "fatal"
+        if levelno >= CRITICAL_LEVEL:
+            return "critical"
+        if levelno >= ALERT_LEVEL:
+            return "alert"
+        if levelno >= NOTICE_LEVEL:
+            return "notice"
+        if levelno >= logging.CRITICAL:
+            return "critical"
+        if levelno >= logging.ERROR:
+            return "error"
+        if levelno >= logging.WARNING:
+            return "warning"
+        if levelno >= logging.INFO:
+            return "info"
+        return "debug"
+
+    def format(self, record: logging.LogRecord) -> str:
+        # If user provided an fmt, inject %(log_color)s / %(reset)s and delegate
+        if self._base_formatter:
+            try:
+                key = self._level_to_key(record.levelno)
+                start = self._colors.get(key, "")
+                reset = self._colors.get("reset", "")
+                setattr(record, "log_color", start)
+                setattr(record, "reset", reset)
+            except Exception:
+                setattr(record, "log_color", "")
+                setattr(record, "reset", "")
+            return self._base_formatter.format(record)
+
+        # Otherwise fallback to CustomFormatter behaviour (full-colour templates)
+        return super().format(record)
+    
 def get_def() -> str:
     """
     Get current function/class definition name for logging context.

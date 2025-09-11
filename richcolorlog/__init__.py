@@ -47,7 +47,8 @@ from .logger import (
     ALERT_LEVEL,
     NOTICE_LEVEL,
     RICH_AVAILABLE,
-    test
+    test,
+    RichColorLogFormatter
 )
 
 __all__ = [
@@ -63,5 +64,6 @@ __all__ = [
     "NOTICE_LEVEL"
     "RICH_AVAILABLE",
     "_add_custom_level_method",
-    "test"
+    "test",
+    "RichColorLogFormatter"
 ]
