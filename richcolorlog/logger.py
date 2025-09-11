@@ -692,6 +692,47 @@ def run_test():
     obj = ExampleClass()
     result = obj.example_method()
     print(f"Result: {result}")
+    print()
+    print("=" * shutil.get_terminal_size()[0])
+    print("Check log file 'app.log' for file logging output.\n")
+
+    print("example usage of RichColorLogFormatter for default logger:\n")
+    # --- Setup Logging with Richcolorlog ---
+    handler = logging.StreamHandler()
+    formatter = RichColorLogFormatter(
+        fmt="%(log_color)s[%(levelname)s]%(reset)s %(message)s",
+        datefmt="%H:%M:%S"
+    )
+    handler.setFormatter(formatter)
+
+    root_logger = logging.getLogger()
+    root_logger.handlers = []  # Empty the default handler
+    root_logger.addHandler(handler)
+    root_logger.setLevel(logging.DEBUG)
+
+    # --- Examples of use with urllib3/requests ---
+    import requests
+
+    logging.getLogger("urllib3").setLevel(logging.DEBUG)  # supaya kelihatan
+    resp = requests.get("https://httpbin.org/get")
+    print(resp.status_code)
+    print()
+    
+    print("example usage of setup_logging for default logger:\n")
+    logger = setup_logging(level='DEBUG', show_background=True)
+
+    # Make sure the Child-Loggers don't have their own handlers who prevent propagation
+    for name in ("urllib3", "requests", "chardet"):
+        lg = logging.getLogger(name)
+        lg.handlers.clear()     # Delete the handler that is installed with a library (if any)
+        lg.propagate = True     # Leave the Root Logger (Richhandler) that render
+        lg.setLevel(logging.DEBUG)
+
+    # then use requests as usual
+    
+    logging.getLogger("urllib3").setLevel(logging.DEBUG)
+    resp = requests.get("https://httpbin.org/get")
+    logger.info("status %s", resp.status_code)
 
 if __name__ == "__main__":
     run_test()
