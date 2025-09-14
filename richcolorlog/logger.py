@@ -38,7 +38,8 @@ class CustomFormatter(logging.Formatter):
         'info': "\x1b[38;2;0;255;255m",          # #00ffff
         'warning': "\x1b[30;48;2;255;255;0m",    # black on #ffff00
         'error': "\x1b[97;41m",                  # #ffffff on red
-        'critical': "\x1b[97;48;2;85;0;0m",      # bright_white on #550000
+        # 'critical': "\x1b[97;48;2;85;0;0m",      # bright_white on #550000
+        'critical': "\x1b[37;44m",
         'fatal': "\x1b[97;48;2;0;85;255m",       # bright_white on #0055FF
         'emergency': "\x1b[97;48;2;170;0;255m",  # bright_white on #aa00ff
         'alert': "\x1b[97;48;2;0;85;0m",         # bright_white on #005500
@@ -181,12 +182,12 @@ if RICH_AVAILABLE:
             logging.INFO: "bold #00ffff",
             logging.WARNING: "black on #ffff00",
             logging.ERROR: "#ffffff on red",
-            logging.CRITICAL: "bright_white on #550000",
+            logging.CRITICAL: "#00FFFF on #FF00FF",
             FATAL_LEVEL: "bright_white on #0055FF",
             EMERGENCY_LEVEL: "bright_white on #aa00ff",
-            ALERT_LEVEL: "bright_white on #005500",
+            ALERT_LEVEL: "#FFFFFF on #005500",
             NOTICE_LEVEL: "black on #00ffff",
-            CRITICAL_LEVEL: "bright_white on #550000",
+            CRITICAL_LEVEL: "#00FFFF on #FF00FF",
         }
         
         def __init__(self, lexer=None, show_background=True):
@@ -204,12 +205,12 @@ if RICH_AVAILABLE:
                 self.LEVEL_STYLES.update({
                     logging.WARNING: "#ffff00",
                     logging.ERROR: "red",
-                    logging.CRITICAL: "bold #550000",
+                    logging.CRITICAL: "bold #FF00FF",
                     FATAL_LEVEL: "#0055FF",
                     EMERGENCY_LEVEL: "#aa00ff",
                     ALERT_LEVEL: "#005500",
                     NOTICE_LEVEL: "#00ffff",
-                    CRITICAL_LEVEL: "#550000",
+                    CRITICAL_LEVEL: "#FF00FF",
                     logging.INFO: "bold #00FF00",
                 })
         
@@ -280,7 +281,8 @@ def setup_logging_custom(
     show_pid=True,
     show_level=True,
     show_path=True,
-    exceptions=[]
+    exceptions=[],
+    show=True,
 ):
     """
     Setup basic logging with custom formatter (ANSI colors).
@@ -299,6 +301,10 @@ def setup_logging_custom(
     Returns:
         logging.Logger: Configured logger instance
     """
+    if not show:
+        level = 'CRITICAL'
+        os.environ['NO_LOGGING'] = '1'
+        
     if _check_logging_disabled():
         return logging.getLogger()
 
@@ -355,7 +361,8 @@ def setup_logging(
     log_time_format: Union[str, FormatTimeCallable] = "[%x %X]",
     keywords: Optional[List[str]] = None,
     show_background=True,
-    exceptions=[]
+    exceptions=[],
+    show=True
 ) -> logging.Logger:
     """
     Setup enhanced logging with Rich formatting.
@@ -389,6 +396,11 @@ def setup_logging(
     Returns:
         logging.Logger: Configured logger instance
     """
+    
+    if not show:
+        level = 'CRITICAL'
+        os.environ['NO_LOGGING'] = '1'
+    
     if _check_logging_disabled():
         return logging.getLogger()
     
@@ -425,7 +437,7 @@ def setup_logging(
             logfile = "app.log"
     # console.log(f"logtofile = {logtofile}, logfile = {logfile}")
     # Setup Rich handler for console
-    rich_handler = RichHandler(
+    rich_handler = RichHandler( # type: ignore
         show_time=show_time,
         omit_repeated_times=omit_repeated_times,
         show_level=show_level,
