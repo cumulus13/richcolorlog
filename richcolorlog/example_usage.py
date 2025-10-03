@@ -4,7 +4,8 @@ Example usage of the rich-logger package.
 """
 
 import logging
-from richcolorlog import setup_logging, get_def
+# from richcolorlog import setup_logging, get_def
+from logger3 import setup_logging, get_def
 
 
 def main():
@@ -12,10 +13,19 @@ def main():
     # Setup the logger with enhanced features
     logger = setup_logging(
         show_locals=True,      # Show local variables in tracebacks
-        logfile="example.log", # Custom log file
-        level=logging.DEBUG    # Set minimum level
+        log_file_name="example.log", # Custom log file
+        level="debug",    # Set minimum level
+        # lexer='python'
     )
     
+    code = """
+    def hello():
+        print("Hello World")
+    """
+
+    logger.info(code, lexer='python')  # Akan di-highlight sebagai Python code
+    logger.debug("SELECT * FROM users", lexer='sql')  # Akan di-highlight sebagai SQL
+
     # Basic logging examples
     logger.debug("This is a debug message")
     logger.info("This is an info message")
@@ -50,17 +60,16 @@ def fibonacci(n):
 print(fibonacci(10))
     '''
     
-    logger.info("Here's a Python code example:")
+    logger.info("Here's a Python code example:", extra={'lexer':'python'})
     # Note: To use syntax highlighting, you would need to modify the record
     # This is a simplified example
     logger.info(code_snippet)
     
     print("✅ Example completed! Check example.log for file output.")
 
-
 class ExampleClass:
     """Example class to demonstrate context logging."""
-    
+    import logging
     def __init__(self):
         self.logger = logging.getLogger(__name__)
     

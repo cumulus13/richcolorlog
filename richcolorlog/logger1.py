@@ -339,7 +339,7 @@ if RICH_AVAILABLE:
         def format(self, record: logging.LogRecord) -> Union[Text, str]:
             """Format log record with Rich styling."""
             try:
-                lexer = getattr(record, "lexer", self.lexer)
+                lexer = getattr(record, "lexer", self.lexer or None)
                 level_style = self.LEVEL_STYLES[record.levelno] or ""
                 
                 # Build prefix
@@ -375,7 +375,7 @@ if RICH_AVAILABLE:
                 message = record.getMessage()
                 # Escape Rich markup to prevent injection
                 safe_message = escape(message) if hasattr(record, '_safe_markup') else message
-                log_text = Text(safe_message, style="")
+                log_text = Text(safe_message, style=level_style)
                 prefix_text.append(log_text)
                 return prefix_text
                 
