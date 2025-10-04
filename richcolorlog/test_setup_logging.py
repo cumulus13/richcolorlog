@@ -6,11 +6,12 @@
 # License: MIT
 
 import os
+# from logger3 import getLogger as setup_logging
 from logger3 import setup_logging
 
 print("Test function (CustomFormatter), No Background Color.\n")
-
-logger = setup_logging(show_background=False)
+FORMAT = "%(icon)s %(asctime)s - %(name)s - %(process)d - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+logger = setup_logging(show_background=False, format_template=FORMAT, name="TEST [1]")
 
 logger.critical("This is a critical message")
 logger.error("This is an error message")
@@ -26,7 +27,7 @@ print("\n", "="*(os.get_terminal_size()[0] - 3), "\n")
 
 print("Test function (CustomFormatter), Background Color.\n")
 
-logger = setup_logging(show_background=True)
+logger = setup_logging(show_background=True, format_template=FORMAT, name="TEST [2]")
 
 logger.critical("This is a critical message")
 logger.error("This is an error message")
@@ -39,9 +40,11 @@ logger.alert("This is a alert message")
 logger.fatal("This is a fatal message")
 
 # print("Test function (CustomFormatter), LEXER + No Background Color.\n")
+print("\n", "="*(os.get_terminal_size()[0] - 3), "\n")
+
 print("Test function (CustomFormatter), LEXER\n")
 
-logger = setup_logging(show_background=False)
+logger = setup_logging(show_background=False, format_template=FORMAT, name="TEST [3]")
 
 
 code = """
@@ -51,10 +54,12 @@ code = """
 
 logger.info(code, lexer='python')  # Akan di-highlight sebagai Python code
 logger.debug("SELECT * FROM users", lexer='sql')  # Akan di-highlight sebagai SQL
+
+print("\n", "="*(os.get_terminal_size()[0] - 3), "\n")
 
 print("\nTest function (CustomFormatter), LEXER + Background Color.\n")
 
-logger = setup_logging(show_background=True)
+logger = setup_logging(show_background=True, format_template=FORMAT, name="TEST [4]")
 
 
 code = """
@@ -64,3 +69,27 @@ code = """
 
 logger.info(code, lexer='python')  # Akan di-highlight sebagai Python code
 logger.debug("SELECT * FROM users", lexer='sql')  # Akan di-highlight sebagai SQL
+
+
+print("\n", "="*(os.get_terminal_size()[0] - 3), "\n")
+
+print("Test function (CustomFormatter) + No Background + custom variable format \n")
+
+
+FORMAT="%(asctime)s [%(levelname)s] %(name)s | user=%(user_id)s | %(message)s"
+logger = setup_logging(show_background=False, format_template=FORMAT, name="TEST [5]")
+
+# Logging dengan field kustom
+logger.info("User logged in", extra={"user_id": "U12345"})
+
+print("\n", "="*(os.get_terminal_size()[0] - 3), "\n")
+
+print("Test function (CustomFormatter) + Background + custom variable format \n")
+
+
+FORMAT="%(asctime)s [%(levelname)s] %(name)s | user=%(user_id)s | %(message)s"
+logger = setup_logging(show_background=True, format_template=FORMAT, name="TEST [6]")
+
+# Logging dengan field kustom
+logger.info("User logged in", extra={"user_id": "U12345"})
+

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# file: richcolorlog/logger.py
+# file: richcolorlog/logger3.py
 # Author: Hadi Cahyadi <cumulus13@gmail.com>
 # Date: 2025-10-02 09:58:21.987880
 # Description: Rich Logger - Enhanced logging with Rich formatting and custom levels.
@@ -25,6 +25,7 @@ try:
     from pygments import highlight
     from pygments.lexers import get_lexer_by_name, TextLexer
     from pygments.formatters import TerminalFormatter
+
     PYGMENTS_AVAILABLE = True
 except ImportError:
     PYGMENTS_AVAILABLE = False
@@ -32,14 +33,12 @@ except ImportError:
 try:
     from rich.logging import FormatTimeCallable
 except ImportError:
+    from typing import Callable
     FormatTimeCallable = Callable[[float], str]
 
 try:
-    import rich
     from rich.logging import RichHandler
     from rich.text import Text
-    from rich.console import Group
-    from rich.table import Table
     from rich.console import Console
     from rich.syntax import Syntax
     from rich import traceback as rich_traceback
@@ -49,10 +48,6 @@ try:
 except ImportError:
     RICH_AVAILABLE = False
     console = None
-    RichHandler = object
-    # Fallback escape function
-    def rich_escape(text: str) -> str:
-        return str(text)
 
 
 # Define custom log levels (matching syslog severity)
@@ -78,21 +73,6 @@ logging.addLevelName(EMERGENCY_LEVEL, "EMERGENCY")
 logging.addLevelName(ALERT_LEVEL, "ALERT")
 logging.addLevelName(CRITICAL_LEVEL, "CRITICAL")
 logging.addLevelName(NOTICE_LEVEL, "NOTICE")
-logging.addLevelName(FATAL_LEVEL, "FATAL")
-
-# All logging levels for iteration
-LOGGING_LEVELS_LIST = [
-    DEBUG_LEVEL,
-    INFO_LEVEL,
-    NOTICE_LEVEL,
-    WARNING_LEVEL,
-    ERROR_LEVEL,
-    logging.CRITICAL,
-    CRITICAL_LEVEL,
-    FATAL_LEVEL,
-    ALERT_LEVEL,
-    EMERGENCY_LEVEL,
-]
 
 # Syslog severity mapping (RFC 5424)
 SYSLOG_SEVERITY_MAP = {
@@ -112,7 +92,6 @@ SYSLOG_SEVERITY_MAP = {
 LEVEL_TO_TABLE = {
     EMERGENCY_LEVEL: "log_emergency",
     ALERT_LEVEL: "log_alert",
-    FATAL_LEVEL: "log_fatal",
     CRITICAL_LEVEL: "log_critical",
     ERROR_LEVEL: "log_error",
     WARNING_LEVEL: "log_warning",
@@ -141,6 +120,7 @@ def _configure_ipython_logging():
                               message='.*coroutine.*was never awaited.*')
         
         # Disable Rich's automatic detection in IPython
+        import os
         if 'JUPYTER_COLUMNS' in os.environ:
             # Force simple console in Jupyter
             os.environ['TERM'] = 'dumb'
@@ -212,16 +192,15 @@ def _add_custom_level_method(level_name: str, level_value: int):
 _add_custom_level_method("EMERGENCY", EMERGENCY_LEVEL)
 _add_custom_level_method("ALERT", ALERT_LEVEL)
 _add_custom_level_method("NOTICE", NOTICE_LEVEL)
-_add_custom_level_method("FATAL", FATAL_LEVEL)
 
 
 # ==================== Icon Support ====================
 
 class Icon:
     """Icon mappings for different log levels."""
-    debug     = "🐛"
+    debug     = "🐞"
     info      = "ℹ️"
-    notice    = "📢"
+    notice    = "🔔"
     warning   = "⚠️"
     error     = "❌"
     critical  = "💥"
@@ -276,7 +255,6 @@ class IconFilter(logging.Filter):
         ALERT_LEVEL: Icon.alert,
         CRITICAL_LEVEL: Icon.critical,
         NOTICE_LEVEL: Icon.notice,
-        FATAL_LEVEL: Icon.fatal,
     }
     
     def __init__(self, icon_first=False):
@@ -305,99 +283,56 @@ class IconFilter(logging.Filter):
             record.icon = ""
         return True
 
-# Custom Logger: Override ._log so you can accept Lexer
-# class RichLogger(logging.Logger):
-#     """Custom logger class that supports lexer parameter."""
-    
-#     def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, stacklevel=1, **kwargs):
-#         if extra is None:
-#             extra = {}
-#         if "lexer" in kwargs:
-#             extra["lexer"] = kwargs.pop("lexer")
-#         super()._log(level, msg, args, exc_info, extra, stack_info, stacklevel)
-    
-#     # TAMBAHKAN METHOD-METHOD INI:
-#     def debug(self, msg, *args, **kwargs):
-#         if self.isEnabledFor(logging.DEBUG):
-#             self._log(logging.DEBUG, msg, args, **kwargs)
-    
-#     def info(self, msg, *args, **kwargs):
-#         if self.isEnabledFor(logging.INFO):
-#             self._log(logging.INFO, msg, args, **kwargs)
-    
-#     def warning(self, msg, *args, **kwargs):
-#         if self.isEnabledFor(logging.WARNING):
-#             self._log(logging.WARNING, msg, args, **kwargs)
-    
-#     def error(self, msg, *args, **kwargs):
-#         if self.isEnabledFor(logging.ERROR):
-#             self._log(logging.ERROR, msg, args, **kwargs)
-    
-#     def critical(self, msg, *args, **kwargs):
-#         if self.isEnabledFor(logging.CRITICAL):
-#             self._log(logging.CRITICAL, msg, args, **kwargs)
+# 🛠️ Custom Logger: Override ._log so you can accept Lexer
+class RichLogger(logging.Logger):
+    print("3"*os.get_terminal_size()[0])
+    def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, stacklevel=1, **kwargs):
+        print("4"*os.get_terminal_size()[0])
+        if extra is None:
+            extra = {}
+        if "lexer" in kwargs:
+            extra["lexer"] = kwargs.pop("lexer")
+        print(f"EXTRA: {extra}")
+        print(f"LEXER RichLogger: {extra.get('lexer')}")
+        super()._log(level, msg, args, exc_info, extra, stack_info, stacklevel)
 
-class CustomLogger(logging.Logger):
-    """Custom logger class for ANSI output that supports lexer parameter."""
-    
+class AnsiLogger(logging.Logger):
     def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, stacklevel=1, **kwargs):
         if extra is None:
             extra = {}
         if "lexer" in kwargs:
             extra["lexer"] = kwargs.pop("lexer")
+        print(f"LEXER AnsiLogger: {lexer}")
         super()._log(level, msg, args, exc_info, extra, stack_info, stacklevel)
-    
-    # TAMBAHKAN METHOD-METHOD YANG SAMA SEPERTI DI ATAS:
-    def debug(self, msg, *args, **kwargs):
-        if self.isEnabledFor(logging.DEBUG):
-            self._log(logging.DEBUG, msg, args, **kwargs)
-    
-    def info(self, msg, *args, **kwargs):
-        if self.isEnabledFor(logging.INFO):
-            self._log(logging.INFO, msg, args, **kwargs)
-    
-    def warning(self, msg, *args, **kwargs):
-        if self.isEnabledFor(logging.WARNING):
-            self._log(logging.WARNING, msg, args, **kwargs)
-    
-    def error(self, msg, *args, **kwargs):
-        if self.isEnabledFor(logging.ERROR):
-            self._log(logging.ERROR, msg, args, **kwargs)
-    
-    def critical(self, msg, *args, **kwargs):
-        if self.isEnabledFor(logging.CRITICAL):
-            self._log(logging.CRITICAL, msg, args, **kwargs)
 
 class CustomFormatter(logging.Formatter):
     """Custom formatter with ANSI color codes for different log levels."""
     
     COLORS = SafeDict({
-        'debug': "\x1b[38;2;255;170;0m",
-        'info': "\x1b[38;2;0;255;255m",
-        'warning': "\x1b[30;48;2;255;255;0m",
-        'error': "\x1b[97;41m",
-        'critical': "\x1b[37;44m",
-        'alert': "\x1b[97;48;2;0;85;0m",
-        'emergency': "\x1b[97;48;2;170;0;255m",
-        'notice': "\x1b[30;48;2;0;255;255m",
-        'fatal': "\x1b[97;48;2;85;0;0m",
-        'reset': "\x1b[0m"
-    })
+            'debug': "\x1b[38;2;255;170;0m",
+            'info': "\x1b[38;2;0;255;255m",
+            'warning': "\x1b[30;48;2;255;255;0m",
+            'error': "\x1b[97;41m",
+            'critical': "\x1b[37;44m",
+            'alert': "\x1b[97;48;2;0;85;0m",
+            'emergency': "\x1b[97;48;2;170;0;255m",
+            'notice': "\x1b[30;48;2;0;255;255m",
+            'reset': "\x1b[0m"
+        })
     
     FORMAT_TEMPLATE = "%(asctime)s - %(name)s - %(process)d - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
 
-
     def __init__(
         self,
-        show_background: bool = True,
+        show_background:bool = True,
         format_template: Optional[str] = "[%(levelname)s] %(message)s",
-        show_time: bool = True,
-        show_name: bool = True,
-        show_pid: bool = True,
-        show_level: bool = True,
-        show_path: bool = True,
-        icon_first: bool = False,
-        lexer: str = '',
+        show_time:bool = True,
+        show_name:bool = True,
+        show_pid:bool = True,
+        show_level:bool = True,
+        show_path:bool = True,
+        icon_first:bool = False,  # NEW PARAMETER
+        lexer:str = '',
         use_colors: bool = True
     ):
         super().__init__()
@@ -423,35 +358,38 @@ class CustomFormatter(logging.Formatter):
                 'alert': "\x1b[38;2;0;85;0m",
                 'emergency': "\x1b[38;2;170;0;255m",
                 'notice': "\x1b[38;2;0;255;255m",
-                'fatal': "\x1b[38;2;0;85;255m",
+
+                'WARNING': "\x1b[38;2;255;255;0m",    # yellow
+                'ERROR': "\x1b[31m",                  # red
+                'CRITICAL': "\x1b[38;2;85;0;0m",      # #550000
+                'FATAL': "\x1b[38;2;0;85;255m",       # #0055FF
+                'EMERGENCY': "\x1b[38;2;170;0;255m",  # #AA00FF
+                'ALERT': "\x1b[38;2;0;85;0m",         # #005500
+                'NOTICE': "\x1b[38;2;0;255;255m",     # #00FFFF
             })
 
         self._build_formatters()
         
     def _build_formatters(self):
-        """Build formatters for each log level."""
-        icon_prefix = self.check_icon_first()
         if self.use_colors:
             self.formatters = {
-                logging.DEBUG: logging.Formatter(icon_prefix + self.COLORS['debug'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
-                logging.INFO: logging.Formatter(icon_prefix + self.COLORS['info'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
-                logging.WARNING: logging.Formatter(icon_prefix + self.COLORS['warning'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
-                logging.ERROR: logging.Formatter(icon_prefix + self.COLORS['error'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
-                logging.CRITICAL: logging.Formatter(icon_prefix + self.COLORS['critical'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
-                CRITICAL_LEVEL: logging.Formatter(icon_prefix + self.COLORS['critical'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
-                EMERGENCY_LEVEL: logging.Formatter(icon_prefix + self.COLORS['emergency'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
-                ALERT_LEVEL: logging.Formatter(icon_prefix + self.COLORS['alert'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
-                NOTICE_LEVEL: logging.Formatter(icon_prefix + self.COLORS['notice'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
-                FATAL_LEVEL: logging.Formatter(icon_prefix + self.COLORS['fatal'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
+                logging.DEBUG: logging.Formatter(self.check_icon_first(self.icon_first) + self.COLORS['debug'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
+                logging.INFO: logging.Formatter(self.check_icon_first(self.icon_first) + self.COLORS['info'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
+                logging.WARNING: logging.Formatter(self.check_icon_first(self.icon_first) + self.COLORS['warning'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
+                logging.ERROR: logging.Formatter(self.check_icon_first(self.icon_first) + self.COLORS['error'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
+                logging.CRITICAL: logging.Formatter(self.check_icon_first(self.icon_first) + self.COLORS['critical'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
+                CRITICAL_LEVEL: logging.Formatter(self.check_icon_first(self.icon_first) + self.COLORS['critical'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
+                EMERGENCY_LEVEL: logging.Formatter(self.check_icon_first(self.icon_first) + self.COLORS['emergency'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
+                ALERT_LEVEL: logging.Formatter(self.check_icon_first(self.icon_first) + self.COLORS['alert'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
+                NOTICE_LEVEL: logging.Formatter(self.check_icon_first(self.icon_first) + self.COLORS['notice'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
             }
         else:
-            # self.formatters = {level: logging.Formatter(self.FORMAT_TEMPLATE) for level in LOGGING_LEVELS_LIST}
-            base_format = icon_prefix + self.FORMAT_TEMPLATE
-            self.formatters = {level: logging.Formatter(base_format) for level in LOGGING_LEVELS_LIST}
+            self.formatters = {level: logging.Formatter(self.FORMAT_TEMPLATE) for level in logging_levels_list}
 
     def _build_format_template(self, show_time, show_name, show_pid, show_level, show_path) -> str:
         """Build format template based on options."""
         parts = []
+        # Add icon placeholder if icon_first is True
         if show_time:
             parts.append("%(asctime)s")
         if show_name:
@@ -465,8 +403,18 @@ class CustomFormatter(logging.Formatter):
             parts.append("(%(filename)s:%(lineno)d)")
         return " - ".join(parts)
 
-    def _supports_color(self) -> bool:
+    def _supports_color1(self) -> bool:
         """Check if terminal supports color output."""
+        try:
+            return (
+                hasattr(sys.stdout, 'isatty') and sys.stdout.isatty() and
+                os.environ.get('TERM') != 'dumb' and
+                os.environ.get('NO_COLOR') is None
+            )
+        except (AttributeError, OSError):
+            return False
+
+    def _supports_color(self) -> bool:
         if os.getenv("FORCE_COLOR", "").lower() in ("1", "true"):
             return True
         if os.getenv("NO_COLOR") is not None:
@@ -476,42 +424,44 @@ class CustomFormatter(logging.Formatter):
         except Exception:
             return False
 
-    def check_icon_first(self) -> str:
-        """Return icon placeholder if icon_first is enabled."""
-        if self.icon_first:
+    def check_icon_first(self, icon_first = True):
+        if icon_first:
             return "%(icon)s "
-        return ''
+        else:
+            return ''
 
     @performance_monitor
     def format(self, record: logging.LogRecord) -> str:
-        """Format the log record."""
-        # Ensure icon always exists
+        # Pastikan icon selalu ada
         if not hasattr(record, "icon"):
             record.icon = ""
 
-        # Select formatter based on level
-        formatter = self.formatters.get(record.levelno)
+        # Pilih formatter berdasarkan level
+        formatter = getattr(self, "formatters", {}).get(record.levelno, None)
         
-        # Use default formatter if not found
+        # Jika tidak ada, gunakan default formatter
         if formatter is None:
-            formatter = self.default_formatter
+            formatter = getattr(self, "default_formatter", None)
+            if formatter is None:
+                # Buat fallback formatter on the fly
+                formatter = logging.Formatter(self.FORMAT_TEMPLATE)
 
         try:
             msg = formatter.format(record)
         except Exception as e:
-            # Don't let logging crash
+            # Jangan biarkan logging crash
             msg = f"[FORMATTER ERROR] {record.getMessage()} - {str(e)}"
 
         return msg
 
-class CustomRichFormatter(logging.Formatter):
-    """Enhanced Rich formatter with syntax highlighting support."""
-    
+class CustomRichFormatter1(logging.Formatter):
+    """Enhanced Rich formatter with better performance and error handling."""
+
     LEVEL_STYLES = SafeDict({
         logging.DEBUG: "bold #FFAA00",
         logging.INFO: "bold #00FFFF",
         logging.WARNING: "black on #FFFF00",
-        logging.ERROR: "white on red",
+        logging.ERROR: "#FFFFFF on red",
         logging.CRITICAL: "bright_white on #550000",
         FATAL_LEVEL: "bright_white on #0055FF",
         EMERGENCY_LEVEL: "bright_white on #AA00FF",
@@ -519,7 +469,8 @@ class CustomRichFormatter(logging.Formatter):
         NOTICE_LEVEL: "black on #00FFFF",
     })
 
-    def __init__(self, lexer: Optional[str] = None, show_background: bool = True, theme: str = "fruity", icon_first: bool = True):
+    def __init__(self, lexer: Optional[str] = None, show_background: bool = True, theme: str = "fruity", icon_first = True):
+        """Initialize EnhancedRichFormatter."""
         super().__init__()
         self.lexer = lexer
         self.theme = theme
@@ -537,18 +488,97 @@ class CustomRichFormatter(logging.Formatter):
             })
 
     @performance_monitor
-    def format(self, record: logging.LogRecord) -> str:
+    def format(self, record: logging.LogRecord) -> Union[Text, str]:
         """Format log record with Rich styling."""
-        # Get style color for this level
+        try:
+            lexer = getattr(record, "lexer", self.lexer or None)
+            level_style = self.LEVEL_STYLES[record.levelno] or ""
+            
+            # Build prefix
+            prefix = f"{record.levelname} - ({record.filename}:{record.lineno}) "
+            if self.icon_first and hasattr(record, 'icon'):
+                prefix = f"{record.icon} " + prefix
+            prefix_text = Text(prefix, style=level_style)
+            
+            # Handle syntax highlighting
+            if lexer and hasattr(record, 'msg'):
+                try:
+                    message = record.getMessage()
+                    syntax = Syntax(
+                        message, 
+                        lexer, 
+                        theme=self.theme, 
+                        line_numbers=False,
+                        word_wrap=True
+                    )
+                    text_obj = syntax.highlight(message)
+                    if text_obj.plain.endswith("\n"):
+                        text_obj = text_obj[:-1]
+                    prefix_text.append(text_obj)
+                    return prefix_text
+                except Exception:
+                    # Fall through to default handling
+                    pass
+            
+            # Handle Text objects
+            if isinstance(record.msg, Text):
+                prefix_text.append(record.msg)
+                return prefix_text
+                
+            # Default formatting
+            message = record.getMessage()
+            # Escape Rich markup to prevent injection
+            safe_message = escape(message) if hasattr(record, '_safe_markup') else message
+            log_text = Text(safe_message, style=level_style)
+            prefix_text.append(log_text)
+            return prefix_text
+            
+        except Exception as e:
+            # Fallback to string formatting
+            return f"[RICH FORMATTER ERROR] {record.getMessage()} - {str(e)}"                
+
+class CustomRichFormatter(logging.Formatter):
+    LEVEL_STYLES = {
+        logging.DEBUG: "bold #FFAA00",
+        logging.INFO: "bold #00FFFF",
+        logging.WARNING: "black on #FFFF00",
+        logging.ERROR: "white on red",
+        logging.CRITICAL: "bright_white on #550000",
+        FATAL_LEVEL: "bright_white on #0055FF",
+        EMERGENCY_LEVEL: "bright_white on #AA00FF",
+        ALERT_LEVEL: "bright_white on #005500",
+        NOTICE_LEVEL: "black on #00FFFF",
+    }
+
+    def __init__(self, lexer: Optional[str] = None, show_background: bool = True, theme: str = "fruity", icon_first=True):
+        super().__init__()
+        self.lexer = lexer
+        self.theme = theme
+        self.icon_first = icon_first
+        
+        if not show_background:
+            self.LEVEL_STYLES.update({
+                logging.WARNING: "#FFFF00",
+                logging.ERROR: "red",
+                logging.CRITICAL: "bold #550000",
+                FATAL_LEVEL: "#0055FF",
+                EMERGENCY_LEVEL: "#AA00FF",
+                ALERT_LEVEL: "#005500",
+                NOTICE_LEVEL: "#00FFFF",
+            })
+
+    def format(self, record: logging.LogRecord) -> str:
+    
+        # Dapatkan style warna untuk level ini
         style = self.LEVEL_STYLES.get(record.levelno, "")
         levelname = record.levelname
         location = f"({record.filename}:{record.lineno})"
         
-        # Get original message (already processed by IconFilter if icon_first=False)
+        # Ambil pesan asli (sudah diproses oleh IconFilter jika icon_first=False)
         raw_message = record.getMessage()
-        safe_message = rich_escape(raw_message)
+        safe_message = rich_escape(raw_message)  # Escape agar markup tidak bentrok
 
-        # Get icon only if icon_first=True
+        # Ambil icon hanya jika icon_first=True
         icon = getattr(record, 'icon', "")
 
         if self.icon_first and icon:
@@ -579,8 +609,8 @@ class RichColorLogFormatter(CustomRichFormatter):
         super().__init__(
             lexer=lexer,
             show_background=show_background,
-            theme=theme or 'fruity',
-            icon_first=icon_first,
+            theme=theme,
+            icon_first=True,
         )
         self._user_fmt = fmt
         self._datefmt = datefmt
@@ -611,8 +641,8 @@ class RichColorLogFormatter(CustomRichFormatter):
         if self._base_formatter:
             try:
                 key = self._level_to_key(record.levelno)
-                start = CustomFormatter.COLORS.get(key, "")
-                reset = CustomFormatter.COLORS.get("reset", "")
+                start = self.COLORS.get(key, "")
+                reset = self.COLORS.get("reset", "")
                 setattr(record, "log_color", start)
                 setattr(record, "reset", reset)
             except Exception:
@@ -665,6 +695,7 @@ class RabbitMQHandler(logging.Handler):
             )
             self.connection = pika.BlockingConnection(parameters)
             self.channel = self.connection.channel()
+            # Declare exchange sebagai topic untuk routing berdasarkan level
             self.channel.exchange_declare(
                 exchange=self.exchange,
                 exchange_type='topic',
@@ -681,7 +712,7 @@ class RabbitMQHandler(logging.Handler):
             return
         
         try:
-            import pika
+            # routing_key is level name (debug, info, warning, error, critical, etc.)
             routing_key = record.levelname.lower()
             
             message = {
@@ -702,7 +733,7 @@ class RabbitMQHandler(logging.Handler):
                 routing_key=routing_key,
                 body=json.dumps(message),
                 properties=pika.BasicProperties(
-                    delivery_mode=2,
+                    delivery_mode=2,  # make message persistent
                     content_type='application/json'
                 )
             )
@@ -715,7 +746,11 @@ class RabbitMQHandler(logging.Handler):
             self.connection.close()
 
 class KafkaHandler(logging.Handler):
-    """Handler to send log to Kafka."""
+    """
+    Handler to send log to Kafka.
+    Saran: Use topics based on level (logs.debug, logs.info, etc.)
+    Or use a single topic with a level as a key for partitioning.
+    """
     
     def __init__(self, host='localhost', port=9092, topic='logs', 
                  use_level_in_topic=False, level=logging.DEBUG):
@@ -742,13 +777,18 @@ class KafkaHandler(logging.Handler):
             logging.error(f"Failed to connect to Kafka: {e}")
     
     def emit(self, record):
-        """Emit log record to Kafka."""
+        """
+        Emit log record to Kafka.
+        Opsi 1: Single topic, level as key for partitioning
+        Opsi 2: Multiple topics based on levels (logs.debug, logs.info, etc.)
+        """
         if not self.producer:
             return
         
         try:
             level_name = record.levelname.lower()
             
+            # Determine topics based on configuration
             if self.use_level_in_topic:
                 topic = f"{self.base_topic}.{level_name}"
             else:
@@ -767,9 +807,10 @@ class KafkaHandler(logging.Handler):
                 'thread': record.thread,
             }
             
+            # Kirim dengan level sebagai key untuk partitioning yang konsisten
             self.producer.send(
                 topic=topic,
-                key=level_name,
+                key=level_name,  # Key untuk partitioning
                 value=message
             )
             self.producer.flush()
@@ -782,7 +823,10 @@ class KafkaHandler(logging.Handler):
             self.producer.close()
 
 class ZeroMQHandler(logging.Handler):
-    """Handler to send log to ZeroMQ."""
+    """
+    Handler to send log to Zeromq.
+    Suggestion: Use a pub/sub pattern with topic = level for filtering in subscriber.
+    """
     
     def __init__(self, host='localhost', port=5555, socket_type='PUB', level=logging.DEBUG):
         super().__init__(level)
@@ -813,12 +857,16 @@ class ZeroMQHandler(logging.Handler):
             logging.error(f"Failed to setup ZeroMQ: {e}")
     
     def emit(self, record):
-        """Emit log record to ZeroMQ."""
+        """
+        Emit log record to ZeroMQ.
+        Format: [topic] [message]
+        Topic is a level name for filtering in subscriber side.
+        """
         if not self.socket:
             return
         
         try:
-            topic = record.levelname.lower()
+            topic = record.levelname.lower()  # Topic = level for filtering
             
             message = {
                 'timestamp': datetime.fromtimestamp(record.created).isoformat(),
@@ -833,6 +881,7 @@ class ZeroMQHandler(logging.Handler):
                 'thread': record.thread,
             }
             
+            # Send with topic prefix untuk PUB/SUB filtering
             self.socket.send_string(f"{topic} {json.dumps(message)}")
         except Exception as e:
             logging.error(f"Failed to send log to ZeroMQ: {e}")
@@ -855,10 +904,19 @@ class SyslogHandler(logging.handlers.SysLogHandler):
     def emit(self, record):
         """Emit log record to syslog with proper severity."""
         try:
-            severity = SYSLOG_SEVERITY_MAP.get(record.levelno, 7)
+            # Map log level ke syslog severity
+            severity = SYSLOG_SEVERITY_MAP.get(record.levelno, 7)  # default to DEBUG
+            
+            # Calculate priority (facility * 8 + severity)
             priority = self.encodePriority(self.facility, severity)
+            
+            # Format message
             msg = self.format(record)
+            
+            # Send to syslog
             msg = self.ident + msg + '\000'
+            
+            # Prepend priority
             msg = f'<{priority}>{msg}'
             
             if self.unixsocket:
@@ -870,11 +928,14 @@ class SyslogHandler(logging.handlers.SysLogHandler):
                     self.socket.send(msg.encode('utf-8'))
             else:
                 self.socket.sendto(msg.encode('utf-8'), self.address)
-        except Exception:
+        except Exception as e:
             self.handleError(record)
 
 class DatabaseHandler(logging.Handler):
-    """Handler to send log to the database."""
+    """
+    Handler to send log to the database.
+    Each level has its own table + Syslog table for all logs.
+    """
     
     def __init__(self, db_type='postgresql', host='localhost', port=None, 
                  database='logs', user='postgres', password='', level=logging.DEBUG):
@@ -938,6 +999,7 @@ class DatabaseHandler(logging.Handler):
         try:
             cursor = self.connection.cursor()
             
+            # Define table schema
             if self.db_type == 'postgresql':
                 table_schema = """
                     id SERIAL PRIMARY KEY,
@@ -984,6 +1046,7 @@ class DatabaseHandler(logging.Handler):
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 """
             
+            # Create table for each level
             for table_name in LEVEL_TO_TABLE.values():
                 cursor.execute(f"""
                     CREATE TABLE IF NOT EXISTS {table_name} (
@@ -991,6 +1054,7 @@ class DatabaseHandler(logging.Handler):
                     )
                 """)
             
+            # CREATE SYSLOG TABLE for all logs
             cursor.execute(f"""
                 CREATE TABLE IF NOT EXISTS log_syslog (
                     {table_schema}
@@ -1003,13 +1067,14 @@ class DatabaseHandler(logging.Handler):
             logging.error(f"Failed to create log tables: {e}")
     
     def emit(self, record):
-        """Emit log record to database."""
+        """Emit log record to database (2 tables: level-specific + syslog)."""
         if not self.connection:
             return
         
         try:
             cursor = self.connection.cursor()
             
+            # Prepare data
             data = (
                 datetime.fromtimestamp(record.created),
                 record.levelname,
@@ -1023,6 +1088,7 @@ class DatabaseHandler(logging.Handler):
                 record.thread,
             )
             
+            # SQL query
             if self.db_type == 'postgresql':
                 sql = """
                     INSERT INTO {} (timestamp, level, logger, message, module, function, 
@@ -1042,8 +1108,11 @@ class DatabaseHandler(logging.Handler):
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """
             
+            # Insert to table based on level
             level_table = LEVEL_TO_TABLE.get(record.levelno, 'log_info')
             cursor.execute(sql.format(level_table), data)
+            
+            # Insert to Table Syslog (all logs)
             cursor.execute(sql.format('log_syslog'), data)
             
             self.connection.commit()
@@ -1057,10 +1126,23 @@ class DatabaseHandler(logging.Handler):
         if self.connection:
             self.connection.close()
 
-# ==================== Handler Classes ====================
+# ==================== Rich Handler ====================
 
 class AnsiLogHandler(logging.StreamHandler):
-    """Custom Handler with enhanced color formatting and icon ANSI support."""
+    """Custom Handler with enhanced color formatting and icon Ansi support ."""
+    
+    # Icon mapping untuk setiap level
+    LEVEL_ICON_MAP = {
+        logging.DEBUG: Icon.debug,
+        logging.INFO: Icon.info,
+        logging.WARNING: Icon.warning,
+        logging.ERROR: Icon.error,
+        logging.CRITICAL: Icon.critical,
+        EMERGENCY_LEVEL: Icon.emergency,
+        ALERT_LEVEL: Icon.alert,
+        CRITICAL_LEVEL: Icon.critical,
+        NOTICE_LEVEL: Icon.notice,
+    }
     
     def __init__(
         self,
@@ -1076,12 +1158,13 @@ class AnsiLogHandler(logging.StreamHandler):
         icon_first=False,
         **kwargs
     ):
-        super().__init__()
-        
+        super().__init__()  # ← BARIS BARU: WAJIB!
+
         self.lexer = lexer
         self.show_icon = show_icon
         self.icon_first = icon_first
         self.format_template = format_template
+
         
         self.setFormatter(CustomFormatter(
             show_background,
@@ -1096,44 +1179,55 @@ class AnsiLogHandler(logging.StreamHandler):
         ))
         
         if show_icon:
-            icon_filter = IconFilter(icon_first=icon_first)
+            icon_filter = IconFilter(icon_first=icon_first)  # NEW
             self.addFilter(icon_filter)
-    
+        
+        
     def emit(self, record):
         """Emit a record with pygments highlighting + icon."""
         try:
-            msg = self.format(record)
-            
-            # Apply lexer highlighting if available
-            lexer_name = getattr(record, "lexer", None) or self.lexer
-            
-            if lexer_name and PYGMENTS_AVAILABLE:
-                try:
-                    lexer_obj = get_lexer_by_name(lexer_name)
-                    message_only = record.getMessage()
-                    highlighted = highlight(message_only, lexer_obj, TerminalFormatter()).rstrip()
-                    # Replace message part in formatted string
-                    msg = msg.replace(message_only, highlighted)
-                except Exception:
-                    pass
-            
+            msg = self.format(record)  # basic formatting
+            msg = self.render_message(record, record.getMessage())
             self.stream.write(msg + "\n")
             self.flush()
         except Exception:
             self.handleError(record)
 
-class RichColorLogHandler1(RichHandler):
+    def render_message(self, record, message):
+        """Apply lexer highlighting (pygments) and add icon."""
+        # Get lexer for this record
+        lexer_name = getattr(record, "lexer", self.lexer)
+        try:
+            lexer_obj = get_lexer_by_name(lexer_name) if lexer_name else TextLexer()
+        except Exception:
+            lexer_obj = TextLexer()
+
+        try:
+            rendered = highlight(str(message), lexer_obj, TerminalFormatter()).rstrip()
+        except Exception:
+            rendered = str(message)
+
+        # Add icon
+        icon = ""
+        if self.show_icon:
+            icon = self.LEVEL_ICON_MAP.get(record.levelno, "")
+        if icon:
+            rendered = f"{icon} {rendered}" if self.icon_first else f"{rendered} {icon}"
+
+        return rendered
+
+if RICH_AVAILABLE:
+    class RichColorLogHandler(RichHandler):
         """Custom RichHandler with enhanced color formatting and icon support."""
 
-        def __init__(self, lexer=None, show_background=True, render_emoji=True, 
-                     show_icon=True, icon_first=False, **kwargs):
+        def __init__(self, lexer=None, show_background=True, render_emoji=True, show_icon=True, icon_first=False, **kwargs):
+            # simpan argumen custom
             self.lexer = lexer
             self.show_background = show_background
             self.show_icon = show_icon
             self.icon_first = icon_first
             self._render_emoji_flag = render_emoji
 
-            # Remove custom params from kwargs before passing to parent
             kwargs.pop("lexer", None)
             kwargs.pop("show_background", None)
             kwargs.pop("render_emoji", None)
@@ -1143,726 +1237,92 @@ class RichColorLogHandler1(RichHandler):
             super().__init__(**kwargs)
 
             self.markup = True
-            
-            # Enable emoji rendering
+            self.emoji = render_emoji
+
+            # aktifkan emoji di renderer Rich
             try:
-                if hasattr(self, '_log_render'):
-                    self._log_render.emojis = bool(self._render_emoji_flag)
+                self._log_render.emojis = bool(self._render_emoji_flag)
             except Exception:
                 pass
 
             if self.show_icon:
-                icon_filter = IconFilter(icon_first=icon_first)
+                icon_filter = IconFilter(icon_first=icon_first)  # NEW
                 self.addFilter(icon_filter)
 
-            self.setFormatter(CustomRichFormatter(
-                lexer=self.lexer, 
-                show_background=self.show_background, 
-                icon_first=self.icon_first
-            ))
+            self.setFormatter(CustomRichFormatter(lexer=self.lexer, show_background=self.show_background, icon_first=self.icon_first))
 
-class RichColorLogHandler(RichHandler):
-    """Custom RichHandler with compact layout."""
+        # def emit(self, record):
+        #     """Emit a record with icon and optional syntax highlighting."""
+        #     # Handle lexer
+        #     lexer_name = getattr(record, "lexer", None)
+        #     if lexer_name:
+        #         try:
+        #             message = record.getMessage()
+        #             syntax = Syntax(
+        #                 message,
+        #                 lexer_name,
+        #                 theme=self.tracebacks_theme,
+        #                 line_numbers=False,
+        #                 word_wrap=True
+        #             )
+        #             record.msg = syntax  # Replace msg with Syntax object
+        #         except Exception:
+        #             pass  # fallback to plain text
 
-    LEVEL_STYLES = {
-        logging.DEBUG: "bold #FFAA00",
-        logging.INFO: "bold #00FFFF",
-        logging.WARNING: "black on #FFFF00",  # ✅ Background
-        logging.ERROR: "white on red",        # ✅ Background
-        logging.CRITICAL: "bright_white on #550000",  # ✅ Background
-        FATAL_LEVEL: "bright_white on #0055FF",
-        EMERGENCY_LEVEL: "bright_white on #AA00FF",  # ✅ Background
-        ALERT_LEVEL: "bright_white on #005500",      # ✅ Background
-        NOTICE_LEVEL: "black on #00FFFF",            # ✅ Background
-    }
+        #     # Handle icon
+        #     if self.show_icon:
+        #         icon = self.LEVEL_ICON_MAP.get(record.levelno, "")
+        #         if icon:
+        #             if isinstance(record.msg, Text):
+        #                 record.msg = Text(icon + " ", style="") + record.msg
+        #             else:
+        #                 msg_str = str(record.msg)
+        #                 if not msg_str.startswith(icon):
+        #                     record.msg = f"{icon} {msg_str}"
 
-    def __init__(self,
-        lexer=None,
-        show_background=True,
-        render_emoji=True,
-        show_icon=True,
-        icon_first=False,
-        theme="fruity",
-        
-        level: Union[int, str] = 'DEBUG',
-        console: Optional[rich.console.Console] = None,
-        show_time: bool = True,
-        omit_repeated_times: bool = True,
-        show_level: bool = True,
-        show_path: bool = True,
-        enable_link_path: bool = True,        
-        highlighter: Optional[rich.highlighter.Highlighter] = None,
-        markup: bool = False,
-        rich_tracebacks: bool = False,         
-        tracebacks_width: Optional[int] = None,
-        tracebacks_code_width: Optional[int] = 88,
-        tracebacks_extra_lines: int = 3,      
-        tracebacks_theme: Optional[str] = None,
-        tracebacks_word_wrap: bool = True,
-        tracebacks_show_locals: bool = False,         
-        tracebacks_suppress: Iterable[Union[str, ModuleType]] = (),
-        tracebacks_max_frames: int = 100,
-        locals_max_length: int = 10,   
-        locals_max_string: int = 80,
-        log_time_format: Union[str, Callable[[datetime],
-        rich.text.Text]] = '[%x %X]',     
-        keywords: Optional[List[str]] = None,
-        
-        **kwargs):
+        #     try:
+        #         super().emit(record)
+        #     except Exception as e:
+        #         self.handleError(record)
 
-        self.lexer = lexer
-        self.show_background = show_background
-        self.show_icon = show_icon
-        self.icon_first = icon_first
-        self.theme = theme
-        self._render_emoji_flag = render_emoji
-
-        self.level = level 
-        self.console = console 
-        self.show_time = show_time 
-        self.omit_repeated_times = omit_repeated_times 
-        self.show_level = show_level 
-        self.show_path = show_path 
-        self.enable_link_path = enable_link_path 
-        self.highlighter = highlighter 
-        self.markup = markup 
-        self.rich_tracebacks = rich_tracebacks 
-        self.tracebacks_width = tracebacks_width 
-        self.tracebacks_code_width = tracebacks_code_width 
-        self.tracebacks_extra_lines = tracebacks_extra_lines 
-        self.tracebacks_theme = tracebacks_theme 
-        self.tracebacks_word_wrap = tracebacks_word_wrap 
-        self.tracebacks_show_locals = tracebacks_show_locals 
-        self.tracebacks_suppress = tracebacks_suppress 
-        self.tracebacks_max_frames = tracebacks_max_frames 
-        self.locals_max_length = locals_max_length 
-        self.locals_max_string = locals_max_string 
-        self.log_time_format = log_time_format 
-        self.keywords = keywords 
-        
-        # Remove custom params
-        for key in ["lexer", "show_background", "render_emoji", "show_icon", "icon_first", "theme"]:
-            kwargs.pop(key, None)
-
-        super().__init__(**kwargs)
-
-        self.markup = True
-        
-        # Update styles
-        if not show_background:
-            self.LEVEL_STYLES = {
-                logging.DEBUG: "bold #FFAA00",
-                logging.INFO: "bold #00FFFF",
-                logging.WARNING: "#FFFF00",          # ❌ No background
-                logging.ERROR: "red",                # ❌ No background
-                logging.CRITICAL: "bold #550000",    # ❌ No background
-                FATAL_LEVEL: "#0055FF",
-                EMERGENCY_LEVEL: "#AA00FF",
-                ALERT_LEVEL: "#005500",
-                NOTICE_LEVEL: "#00FFFF",
-            }
-
-        try:
-            if hasattr(self, '_log_render'):
-                self._log_render.emojis = bool(self._render_emoji_flag)
-        except Exception:
-            pass
-
-        if self.show_icon:
-            icon_filter = IconFilter(icon_first=icon_first)
-            self.addFilter(icon_filter)
-
-    def get_level_text(self, record):
-        """Override untuk compact level text."""
-        level_name = record.levelname
-        style = self.LEVEL_STYLES.get(record.levelno, "")
-        
-        # Icon handling
-        icon = getattr(record, 'icon', "")
-        if icon and self.icon_first:
-            level_text = Text(f"{icon} ") + Text(f"{level_name}", style=style)
-        else:
-            level_text = Text(level_name, style=style)
-        
-        return level_text
-
-    def emit(self, record):
-        """Override emit untuk custom layout yang lebih compact."""
-        try:
-            # Get message
-            message = self.render_message(record, record.getMessage())
+        # def render_message(self, record, message):
+        #     """Custom render message with icon support."""
+        #     use_markup = getattr(record, "markup", self.markup)
             
-            # Get level with icon
-            level_text = self.get_level_text(record)
+        #     # Get icon if enabled
+        #     icon = ""
+        #     if self.show_icon:
+        #         icon = self.LEVEL_ICON_MAP.get(record.levelno, "")
             
-            # Get path (compact)
-            path_text = Text(f"{record.filename}:{record.lineno}", style="log.path")
+        #     # Convert message to string first
+        #     if isinstance(message, Text):
+        #         message_str = message.plain
+        #     else:
+        #         message_str = str(message)
             
-            # Build compact layout dengan Table
-            output = Text()
+        #     # Add icon to message
+        #     if icon:
+        #         final_message = f"{icon} {message_str}"
+        #     else:
+        #         final_message = message_str
             
-            # Time (optional)
-            if self.show_time:
-                log_time = self.get_time_text(record)
-                output.append(log_time)
-                output.append(" ")
-            
-            # Level + icon (fixed width)
-            # output.append(level_text)
-            # output.append(" " * (12 - len(level_text.plain)))  # Padding
-            
-            # Message
-            if isinstance(message, (Text, str)):
-                output.append(level_text + " " +  message)
-                output.append(" " * (12 - len(level_text.plain)))  # Padding
-                # output.append(message)
-            else:
-                # Syntax atau Rich renderable
-                self.console.print(output, end='')
-                self.console.print(message)
-                return
-
-            
-            # Path di akhir (compact, no excessive spacing)
-            if self.show_path:
-                output.append(" ")
-                output.append(path_text)
-            
-            # Print ke console
-            self.console.print(output)
-            
-        except Exception:
-            self.handleError(record)
+        #     # Return as Text object
+        #     if use_markup:
+        #         try:
+        #             return Text.from_markup(final_message)
+        #         except Exception:
+        #             return Text(final_message)
+        #     else:
+        #         return Text(final_message)
     
-    def get_time_text(self, record):
-        if self.formatter:
-            log_time = self.formatter.formatTime(record, self.log_time_format)
-        else:
-            ct = datetime.fromtimestamp(record.created)
-            if isinstance(self.log_time_format, str):
-                log_time = ct.strftime(self.log_time_format.strip("[]"))
-            elif callable(self.log_time_format):
-                log_time = self.log_time_format(ct)
-            else:
-                log_time = str(ct)
-
-        return Text(f"{log_time}", style="log.time")
-
-
-    def render_message(self, record, message):
-        """Override render_message untuk apply syntax highlighting dan styling."""
-        # Get lexer
-        lexer_name = getattr(record, "lexer", None) or self.lexer
-        
-        # Get style untuk level ini
-        style = self.LEVEL_STYLES.get(record.levelno, "")
-        
-        # Jika ada lexer, apply syntax highlighting
-        # print(f"str(message): {str(message)}")
-        # print(f"str(message): {[str(message)]}")
-        if lexer_name:
-            try:
-                from rich.syntax import Syntax
-                syntax = Syntax(
-                    str(message), 
-                    lexer_name, 
-                    theme=self.theme,
-                    line_numbers=False,
-                    word_wrap=True
-                )
-                return syntax  # ✅ Return Syntax object, bukan string
-            except Exception:
-                pass
-        
-        # Fallback: apply style level ke message
-        if isinstance(message, Text):
-            return message
-        
-        return Text(str(message), style=style)
-
-class RichColorLogHandler2(RichHandler):
-    """Custom RichHandler with compact layout."""
-
-    LEVEL_STYLES = {
-        logging.DEBUG: "bold #FFAA00",
-        logging.INFO: "bold #00FFFF",
-        logging.WARNING: "black on #FFFF00",  # ✅ Background
-        logging.ERROR: "white on red",        # ✅ Background
-        logging.CRITICAL: "bright_white on #550000",  # ✅ Background
-        FATAL_LEVEL: "bright_white on #0055FF",
-        EMERGENCY_LEVEL: "bright_white on #AA00FF",  # ✅ Background
-        ALERT_LEVEL: "bright_white on #005500",      # ✅ Background
-        NOTICE_LEVEL: "black on #00FFFF",            # ✅ Background
-    }
-
-    def __init__(self,
-        lexer=None,
-        show_background=True,
-        render_emoji=True,
-        show_icon=True,
-        icon_first=False,
-        theme="fruity",
-        
-        level: Union[int, str] = 'DEBUG',
-        console: Optional[rich.console.Console] = None,
-        show_time: bool = True,
-        omit_repeated_times: bool = True,
-        show_level: bool = True,
-        show_path: bool = True,
-        enable_link_path: bool = True,        
-        highlighter: Optional[rich.highlighter.Highlighter] = None,
-        markup: bool = False,
-        rich_tracebacks: bool = False,         
-        tracebacks_width: Optional[int] = None,
-        tracebacks_code_width: Optional[int] = 88,
-        tracebacks_extra_lines: int = 3,      
-        tracebacks_theme: Optional[str] = None,
-        tracebacks_word_wrap: bool = True,
-        tracebacks_show_locals: bool = False,         
-        tracebacks_suppress: Iterable[Union[str, ModuleType]] = (),
-        tracebacks_max_frames: int = 100,
-        locals_max_length: int = 10,   
-        locals_max_string: int = 80,
-        log_time_format: Union[str, Callable[[datetime],
-        rich.text.Text]] = '[%x %X]',     
-        keywords: Optional[List[str]] = None,
-        
-        **kwargs):
-
-        self.lexer = lexer
-        self.show_background = show_background
-        self.show_icon = show_icon
-        self.icon_first = icon_first
-        self.theme = theme
-        self._render_emoji_flag = render_emoji
-
-        self.level = level 
-        self.console = console 
-        self.show_time = show_time 
-        self.omit_repeated_times = omit_repeated_times 
-        self.show_level = show_level 
-        self.show_path = show_path 
-        self.enable_link_path = enable_link_path 
-        self.highlighter = highlighter 
-        self.markup = markup 
-        self.rich_tracebacks = rich_tracebacks 
-        self.tracebacks_width = tracebacks_width 
-        self.tracebacks_code_width = tracebacks_code_width 
-        self.tracebacks_extra_lines = tracebacks_extra_lines 
-        self.tracebacks_theme = tracebacks_theme 
-        self.tracebacks_word_wrap = tracebacks_word_wrap 
-        self.tracebacks_show_locals = tracebacks_show_locals 
-        self.tracebacks_suppress = tracebacks_suppress 
-        self.tracebacks_max_frames = tracebacks_max_frames 
-        self.locals_max_length = locals_max_length 
-        self.locals_max_string = locals_max_string 
-        self.log_time_format = log_time_format 
-        self.keywords = keywords 
-        
-        # Remove custom params
-        for key in ["lexer", "show_background", "render_emoji", "show_icon", "icon_first", "theme"]:
-            kwargs.pop(key, None)
-
-        super().__init__(**kwargs)
-
-        self.markup = True
-        
-        # Update styles
-        if not show_background:
-            self.LEVEL_STYLES = {
-                logging.DEBUG: "bold #FFAA00",
-                logging.INFO: "bold #00FFFF",
-                logging.WARNING: "#FFFF00",          # ❌ No background
-                logging.ERROR: "red",                # ❌ No background
-                logging.CRITICAL: "bold #550000",    # ❌ No background
-                FATAL_LEVEL: "#0055FF",
-                EMERGENCY_LEVEL: "#AA00FF",
-                ALERT_LEVEL: "#005500",
-                NOTICE_LEVEL: "#00FFFF",
-            }
-
-        try:
-            if hasattr(self, '_log_render'):
-                self._log_render.emojis = bool(self._render_emoji_flag)
-        except Exception:
-            pass
-
-        if self.show_icon:
-            icon_filter = IconFilter(icon_first=icon_first)
-            self.addFilter(icon_filter)
-
-    def get_level_text(self, record):
-        """Override untuk compact level text."""
-        from rich.text import Text
-        
-        level_name = record.levelname
-        style = self.LEVEL_STYLES.get(record.levelno, "")
-        
-        # Icon handling
-        icon = getattr(record, 'icon', "")
-        if icon and self.icon_first:
-            level_text = Text(f"{icon} {level_name}", style=style)
-        else:
-            level_text = Text(level_name, style=style)
-        
-        return level_text
-
-    def emit(self, record):
-        """Override emit untuk custom layout yang lebih compact."""
-        from rich.text import Text
-        from rich.table import Table
-        
-        try:
-            # Get message
-            message = self.render_message(record, record.getMessage())
-            
-            # Get level with icon
-            level_text = self.get_level_text(record)
-            
-            # Get path (compact)
-            path_text = Text(f"{record.filename}:{record.lineno}", style="log.path")
-            
-            # Build compact layout dengan Table
-            output = Text()
-            
-            # Time (optional)
-            if self.show_time:
-                log_time = self.get_time_text(record)
-                output.append(log_time)
-                output.append(" ")
-            
-            # Level + icon (fixed width)
-            output.append(level_text)
-            output.append(" " * (12 - len(level_text.plain)))  # Padding
-            
-            # Message
-            if isinstance(message, (Text, str)):
-                output.append(message)
-            else:
-                # Syntax atau Rich renderable
-                self.console.print(output, message)
-                return
-
-            # Path di akhir (compact, no excessive spacing)
-            if self.show_path:
-                output.append(" ")
-                output.append(path_text)
-            
-            # Print ke console
-            self.console.print(output)
-            
-        except Exception:
-            self.handleError(record)
-        
-    def get_time_text(self, record):
-        if self.formatter:
-            log_time = self.formatter.formatTime(record, self.log_time_format)
-        else:
-            ct = datetime.fromtimestamp(record.created)
-            if isinstance(self.log_time_format, str):
-                log_time = ct.strftime(self.log_time_format.strip("[]"))
-            elif callable(self.log_time_format):
-                log_time = self.log_time_format(ct)
-            else:
-                log_time = str(ct)
-
-        return Text(f"{log_time}", style="log.time")
-
-    def render_message(self, record, message):
-        from rich.text import Text
-
-        lexer_name = getattr(record, "lexer", None) or self.lexer
-        style = self.LEVEL_STYLES.get(record.levelno, "")
-
-        if lexer_name:
-            try:
-                syntax = Syntax(
-                    str(message),
-                    lexer_name,
-                    theme=self.theme,
-                    line_numbers=False,
-                    word_wrap=True,
-                )
-                return syntax  # ✅ biarkan Syntax, nanti emit handle
-            except Exception:
-                pass
-
-        if isinstance(message, Text):
-            return message
-
-        return Text(str(message), style=style)
-
-
-class RichColorLogHandler4(RichHandler):
-    """Custom RichHandler with compact layout."""
-
-    LEVEL_STYLES = {
-        logging.DEBUG: "bold #FFAA00",
-        logging.INFO: "bold #00FFFF",
-        logging.WARNING: "black on #FFFF00",
-        logging.ERROR: "white on red",
-        logging.CRITICAL: "bright_white on #550000",
-        # custom levels (pastikan sudah didaftarkan jika pakai)
-        # FATAL_LEVEL, EMERGENCY_LEVEL, ...
-    }
-
-    def __init__(self,
-        lexer=None,
-        show_background=True,
-        render_emoji=True,
-        show_icon=True,
-        icon_first=False,
-        theme="fruity",
-
-        level: Union[int, str] = 'DEBUG',
-        console: Optional[object] = None,
-        show_time: bool = True,
-        omit_repeated_times: bool = True,
-        show_level: bool = True,
-        show_path: bool = True,
-        enable_link_path: bool = True,
-        highlighter: Optional[object] = None,
-        markup: bool = False,
-        rich_tracebacks: bool = False,
-        tracebacks_width: Optional[int] = None,
-        tracebacks_code_width: Optional[int] = 88,
-        tracebacks_extra_lines: int = 3,
-        tracebacks_theme: Optional[str] = None,
-        tracebacks_word_wrap: bool = True,
-        tracebacks_show_locals: bool = False,
-        tracebacks_suppress: Iterable[Union[str, ModuleType]] = (),
-        tracebacks_max_frames: int = 100,
-        locals_max_length: int = 10,
-        locals_max_string: int = 80,
-        log_time_format: Union[str, Callable[[object], object]] = '[%x %X]',
-        keywords: Optional[List[str]] = None,
-
-        **kwargs):
-
-        # --- keep your assignments ---
-        self.lexer = lexer
-        self.show_background = show_background
-        self.show_icon = show_icon
-        self.icon_first = icon_first
-        self.theme = theme
-        self._render_emoji_flag = render_emoji
-
-        self.level = level
-        self.console = console
-        self.show_time = show_time
-        self.omit_repeated_times = omit_repeated_times
-        self.show_level = show_level
-        self.show_path = show_path
-        self.enable_link_path = enable_link_path
-        self.highlighter = highlighter
-        self.markup = markup
-        self.rich_tracebacks = rich_tracebacks
-        self.tracebacks_width = tracebacks_width
-        self.tracebacks_code_width = tracebacks_code_width
-        self.tracebacks_extra_lines = tracebacks_extra_lines
-        self.tracebacks_theme = tracebacks_theme
-        self.tracebacks_word_wrap = tracebacks_word_wrap
-        self.tracebacks_show_locals = tracebacks_show_locals
-        self.tracebacks_suppress = tracebacks_suppress
-        self.tracebacks_max_frames = tracebacks_max_frames
-        self.locals_max_length = locals_max_length
-        self.locals_max_string = locals_max_string
-        self.log_time_format = log_time_format
-        self.keywords = keywords
-
-        # Remove custom params from kwargs
-        for key in ["lexer", "show_background", "render_emoji", "show_icon", "icon_first", "theme"]:
-            kwargs.pop(key, None)
-
-        super().__init__(**kwargs)
-
-        self.markup = True
-
-        # CHANGED: gunakan instance-level styles agar tidak menimpa class var
-        self.level_styles = dict(self.LEVEL_STYLES)
-        if not show_background:
-            # override dengan versi tanpa background
-            self.level_styles = {
-                logging.DEBUG: "bold #FFAA00",
-                logging.INFO: "bold #00FFFF",
-                logging.WARNING: "#FFFF00",          # no background
-                logging.ERROR: "red",
-                logging.CRITICAL: "bold #550000",
-                # custom levels keep same mapping but no backgrounds
-            }
-
-        try:
-            if hasattr(self, '_log_render'):
-                self._log_render.emojis = bool(self._render_emoji_flag)
-        except Exception:
-            pass
-
-        if self.show_icon:
-            icon_filter = IconFilter(icon_first=icon_first)
-            self.addFilter(icon_filter)
-
-    def get_level_text(self, record):
-        """Override untuk compact level text."""
-        level_name = record.levelname
-        style = self.level_styles.get(record.levelno, "")
-        icon = getattr(record, 'icon', "")
-        if icon and self.icon_first:
-            return Text(f"{icon} {level_name}", style=style)
-        return Text(level_name, style=style)
-
-    def get_time_text(self, record):
-        """Get formatted time text. (CHANGED: robust fallback, no super().format_time call)"""
-        
-        # Jika ada formatter pada handler, pakai itu (formatTime menerima datefmt tanpa [] biasanya)
-        log_time = None
-        fmt = None
-        if isinstance(self.log_time_format, str):
-            fmt = self.log_time_format.strip("[]") or None
-
-        if getattr(self, "formatter", None):
-            try:
-                # gunakan formatter.formatTime(record, datefmt)
-                log_time = self.formatter.formatTime(record, fmt)
-            except Exception:
-                log_time = None
-
-        if log_time is None:
-            # fallback manual
-            ct = datetime.fromtimestamp(record.created)
-            if isinstance(self.log_time_format, str):
-                try:
-                    log_time = ct.strftime(self.log_time_format.strip("[]"))
-                except Exception:
-                    log_time = ct.strftime("%x %X")
-            elif callable(self.log_time_format):
-                try:
-                    # jika user memberikan callable untuk format
-                    log_time = self.log_time_format(ct)
-                except Exception:
-                    log_time = ct.strftime("%x %X")
-            else:
-                log_time = ct.strftime("%x %X")
-
-        return Text(f"[{log_time}]", style="log.time")
-
-    def render_message(self, record, message):
-        """Override render_message untuk apply syntax highlighting dan styling.
-           Kita biarkan mengembalikan Syntax (renderable) bila lexer dipakai."""
-        
-        lexer_name = getattr(record, "lexer", None) or self.lexer
-        style = self.level_styles.get(record.levelno, "")
-
-        if lexer_name:
-            try:
-                from rich.syntax import Syntax
-                syntax = Syntax(
-                    str(message),
-                    lexer_name,
-                    theme=self.theme,
-                    line_numbers=False,
-                    word_wrap=True
-                )
-                return syntax  # return Syntax object (ditangani di emit)
-            except Exception:
-                pass
-
-        if isinstance(message, Text):
-            return message
-
-        return Text(str(message), style=style)
-
-    def emit(self, record):
-        """Override emit untuk compact layout dengan path right-aligned.
-           (CHANGED: pakai Table.grid + truncation untuk mencegah baris melebihi console width)"""
-        
-        try:
-            message = self.render_message(record, record.getMessage())
-            level_text = self.get_level_text(record)
-            path_text = Text(f"{record.filename}:{record.lineno}", style="log.path")
-
-            # buat grid 2 kolom: kiri expand, kanan no_wrap justify right
-            table = Table.grid(expand=True)
-            table.add_column(ratio=1)
-            table.add_column(no_wrap=True, justify="right")
-
-            left = Text()
-
-            if self.show_time:
-                left.append(self.get_time_text(record))
-                left.append(" ")
-
-            left.append(level_text)
-            left.append(" ")
-
-            # hitung lebar konsol dan alokasi untuk path
-            console_obj = self.console or Console()
-            console_width = getattr(console_obj, "width", 80)
-
-            # plain path length (sederhana)
-            path_plain = getattr(path_text, "plain", str(path_text))
-            path_col_w = max(6, len(path_plain) + 2)  # reserve sedikit ruang
-
-            # sediakan margin ekstra supaya icon/emoji tidak menempel
-            safe_margin = 3
-            left_available_total = max(10, console_width - path_col_w - safe_margin)
-
-            # panjang prefix di left (waktu + level + spaces)
-            left_prefix_len = len(left.plain)
-            avail_for_msg_first = max(0, left_available_total - left_prefix_len)
-
-            # Putuskan bagaimana menampilkan first-line:
-            need_print_full_below = False
-
-            if isinstance(message, Text):
-                # ambil baris pertama tanpa preserving spans (simple)
-                msg_plain = message.plain or ""
-                first_line = msg_plain.splitlines()[0] if msg_plain else ""
-                first_text = Text(first_line)
-                # truncate agar tidak melewati width
-                if avail_for_msg_first > 0:
-                    first_text.truncate(avail_for_msg_first, overflow="ellipsis")
-                left.append(first_text)
-                # jika ada more lines atau first_line lebih panjang
-                need_print_full_below = ("\n" in msg_plain) or (len(msg_plain) > avail_for_msg_first)
-            elif isinstance(message, str):
-                msg_plain = message
-                first_line = msg_plain.splitlines()[0] if msg_plain else ""
-                first_text = Text(first_line)
-                if avail_for_msg_first > 0:
-                    first_text.truncate(avail_for_msg_first, overflow="ellipsis")
-                left.append(first_text)
-                need_print_full_below = ("\n" in msg_plain) or (len(msg_plain) > avail_for_msg_first)
-            else:
-                # message adalah renderable (contoh: Syntax) -> tidak append ke left (agar tidak memecah rendering)
-                # kita hanya menandai bahwa perlu cetak penuh di bawah
-                need_print_full_below = True
-
-            # tambahkan row pertama: left (terpotong) + path (right-aligned)
-            table.add_row(left, path_text if self.show_path else "")
-
-            # print the table (first line)
-            console_obj.print(table)
-
-            # jika perlu, print full message di bawah (Syntax atau sisa Text)
-            if need_print_full_below:
-                # Untuk Syntax atau renderable lain, print langsung
-                if not isinstance(message, (str, Text)):
-                    console_obj.print(message)
-                else:
-                    # print sisa lines (kalau ada)
-                    lines = str(message).splitlines()
-                    if len(lines) > 1:
-                        # print lines[1:] sebagai satu blok; rich akan wrap sesuai console width
-                        rest = "\n".join(lines[1:])
-                        console_obj.print(rest)
-
-        except Exception:
-            self.handleError(record)
+else:
+    CustomRichFormatter = CustomFormatter
+    RichColorLogHandler = AnsiLogHandler
+    RichLogger = AnsiLogger
 
 # ==================== Setup Functions ====================
 
 def setup_logging_custom(
-    name = __name__,
     level: Union[str, int] = 'DEBUG',
     show_background=True,
     format_template=None,
@@ -1871,77 +1331,50 @@ def setup_logging_custom(
     show_pid=True,
     show_level=True,
     show_path=True,
-    icon_first=True,
+    icon_first=True,  # NEW PARAMETER
     exceptions=None,
     show=True,
-    lexer=None,
-    use_colors=True
 ):
     """Setup basic logging with custom formatter (ANSI colors)."""
 
+    if _check_logging_disabled():
+        return  # logging disabled, jangan pasang handler apapun
+
     if exceptions is None:
         exceptions = []
-
-    if isinstance(level, str):
-        level=getattr(logging, level.upper())
-    else:
-        level=level
-
-    # if isinstance(level, str):
-    #     logging.basicConfig(level=getattr(logging, level.upper()))
-    # else:
-    #     logging.basicConfig(level=level)
         
     if not show:
         level = 'CRITICAL'
         os.environ['NO_LOGGING'] = '1'
-        logging.basicConfig(level=logging.CRITICAL)
-
+        
     if _check_logging_disabled():
         return logging.getLogger()
 
-    logger = logging.getLogger(name)
-    logger.__class__ = CustomLogger
-    logger.setLevel(level)
-
-    # Just delete Streamhandler and Richhandler, leave other handlers (Syslog, RabbitMQ, etc)
-    handlers_to_remove = []
-    for handler in logger.handlers:
-        if isinstance(handler, (logging.StreamHandler, RichHandler if RICH_AVAILABLE else type(None))):
-            handlers_to_remove.append(handler)
-    
-    for handler in handlers_to_remove:
-        logger.removeHandler(handler)
-    
-    # Make a new handler
-    # handler = logging.StreamHandler(sys.stdout)
-    handler = AnsiLogHandler()
-    handler.setLevel(level)
+    if isinstance(level, str):
+        logging.basicConfig(level=getattr(logging, level.upper()))
+    else:
+        logging.basicConfig(level=level)
 
     if exceptions:
         for i in exceptions:
             if isinstance(i, str): 
                 logging.getLogger(str(i)).setLevel(logging.CRITICAL)
 
-    # for handler in logger.handlers:
-    handler.setFormatter(CustomFormatter(
-        show_background,
-        format_template,
-        show_time,
-        show_name,
-        show_pid,
-        show_level,
-        show_path,
-        icon_first,
-        lexer,
-        use_colors
-    ))
+    logger = logging.getLogger()
 
-    if icon_first:
-        icon_filter = IconFilter(icon_first=True)
-        handler.addFilter(icon_filter)
+    for handler in logger.handlers:
+        handler.setFormatter(CustomFormatter(
+                show_background,
+                format_template,
+                show_time,
+                show_name,
+                show_pid,
+                show_level,
+                show_path,
+                icon_first,  # NEW
+            )
+        )
     
-    logger.addHandler(handler)
     return logger
 
 
@@ -1974,7 +1407,6 @@ def setup_logging(
     exceptions=None,
     show=True,
     basic=True,
-    theme: str ='fruity',
     # File logging
     log_file: bool = False,
     log_file_name: Optional[str] = None,
@@ -2016,44 +1448,126 @@ def setup_logging(
     db_user='postgres',
     db_password='',
     db_level=logging.DEBUG,
-    HANDLER: RichColorLogHandler = RichColorLogHandler,
 ) -> logging.Logger:
     """
     Setup enhanced logging with Rich formatting and multiple output handlers.
     
+    Args:
+        name (str, optional): Logger name
+        lexer (str, optional): Syntax highlighter for code
+        show_locals (bool): Show local variables in tracebacks
+        level (Union[str, int]): Logging level
+        show_level (bool): Show log level in console
+        show_time (bool): Show timestamp in console
+        omit_repeated_times (bool): Omit repeated timestamps
+        show_path (bool): Show file path in console
+        enable_link_path (bool): Enable clickable file paths
+        highlighter: Rich highlighter instance
+        markup (bool): Enable Rich markup in log messages
+        rich_tracebacks (bool): Use Rich formatted tracebacks
+        tracebacks_width (int, optional): Width of traceback display
+        tracebacks_extra_lines (int): Extra lines in tracebacks
+        tracebacks_theme (str, optional): Traceback syntax theme
+        tracebacks_word_wrap (bool): Wrap long lines in tracebacks
+        tracebacks_show_locals (bool): Show local variables in tracebacks
+        tracebacks_suppress (Iterable): Modules to suppress in tracebacks
+        locals_max_length (int): Max length of local variable representations
+        locals_max_string (int): Max length of string representations
+        log_time_format (Union[str, FormatTimeCallable]): Time format
+        keywords (List[str], optional): Keywords to highlight
+        show_background (bool): Show background colors for log levels
+        exceptions (list): Logger names to set to CRITICAL level
+        show (bool): Whether to show logs at all
+        basic (bool): Whether to call logging.basicConfig
+        
+        # File Logging
+        log_file (bool): Enable file logging
+        log_file_name (str, optional): Log file path
+        log_file_level (Union[str, int]): File logging level
+        
+        # RabbitMQ
+        rabbitmq (bool): Enable RabbitMQ logging
+        rabbitmq_host (str): RabbitMQ host
+        rabbitmq_port (int): RabbitMQ port
+        rabbitmq_exchange (str): RabbitMQ exchange name
+        rabbitmq_username (str): RabbitMQ username
+        rabbitmq_password (str): RabbitMQ password
+        rabbitmq_vhost (str): RabbitMQ virtual host
+        rabbitmq_level (int): RabbitMQ logging level
+        
+        # Kafka
+        kafka (bool): Enable Kafka logging
+        kafka_host (str): Kafka host
+        kafka_port (int): Kafka port
+        kafka_topic (str): Kafka topic name
+        kafka_use_level_in_topic (bool): Use level in topic name (logs.debug, logs.info, etc)
+        kafka_level (int): Kafka logging level
+        
+        # ZeroMQ
+        zeromq (bool): Enable ZeroMQ logging
+        zeromq_host (str): ZeroMQ host
+        zeromq_port (int): ZeroMQ port
+        zeromq_socket_type (str): Socket type ('PUB' or 'PUSH')
+        zeromq_level (int): ZeroMQ logging level
+        
+        # Syslog
+        syslog (bool): Enable syslog logging
+        syslog_host (str): Syslog host
+        syslog_port (int): Syslog port
+        syslog_facility: Syslog facility
+        syslog_level (int): Syslog logging level
+        
+        # Database
+        db (bool): Enable database logging
+        db_type (str): Database type ('postgresql', 'mysql', 'mariadb', 'sqlite')
+        db_host (str): Database host
+        db_port (int, optional): Database port
+        db_name (str): Database name
+        db_user (str): Database user
+        db_password (str): Database password
+        db_level (int): Database logging level
+        
     Returns:
         logging.Logger: Configured logger instance
     """
 
+    print(f"RICH_AVAILABLE: {RICH_AVAILABLE}")
+    # Set custom logger class
+    if RICH_AVAILABLE:
+        print("1"*os.get_terminal_size()[0])
+        logging.setLoggerClass(RichLogger)
+    else:
+        print("2"*os.get_terminal_size()[0])
+        logging.setLoggerClass(AnsiLogger)
+   
+    if _check_logging_disabled():
+        return  # logging disabled, jangan pasang handler apapun
+ 
     if exceptions is None:
         exceptions = []
-
-    if isinstance(level, str):
-        level=getattr(logging, level.upper())
-    else:
-        level=level
-
+        
     if not show:
         level = 'CRITICAL'
         os.environ['NO_LOGGING'] = '1'
-        logging.basicConfig(level=logging.CRITICAL)
+    
+    # if _check_logging_disabled():
+        # return logging.getLogger(name)
 
-    if _check_logging_disabled():
-        return logging.getLogger(name)
+    logger = logging.getLogger(name)
+    
+    # Convert string level to int
+    if isinstance(level, str):
+        level = getattr(logging, level.upper(), logging.DEBUG)
+    
+    logger.setLevel(level)
 
     if exceptions:
         for i in exceptions:
             if isinstance(i, str): 
                 logging.getLogger(str(i)).setLevel(logging.CRITICAL)
     
-    logger = logging.getLogger(name) 
-    logger.__class__ = CustomLogger
-    logger.setLevel(level)
-
-    # Clear existing handlers
-    logger.handlers.clear()
-
-    # if basic: logging.basicConfig(level=level)
+    if basic:# and name is None:
+        logging.basicConfig(level=level)
 
     # Auto-generate log_file_name if needed
     if log_file_name is None and log_file:
@@ -2066,19 +1580,27 @@ def setup_logging(
                 log_file_name = f"{base}.log"
         except Exception:
             log_file_name = "app.log"
-    
-    # ===== File handler =====
+
+    # Clear existing handlers
+    logger.handlers.clear()
+
+    # ===== File handler with different formats for info and debug =====
     if log_file and log_file_name:
+        # Convert log_file_level to int if string
         if isinstance(log_file_level, str):
             log_file_level = getattr(logging, log_file_level.upper(), logging.INFO)
         
         file_handler = logging.FileHandler(log_file_name, encoding="utf-8")
         file_handler.setLevel(log_file_level)
         
+        # Custom formatter that distinguishes formats based on levels
         class LevelBasedFileFormatter(logging.Formatter):
             """Formatter with different formats for different log levels."""
             
+            # Format for info and level above
             info_format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s (%(filename)s:%(lineno)d)"
+            
+            # Detailed format for debug
             debug_format = "%(asctime)s - %(levelname)s - %(name)s - %(process)d - %(thread)d - %(funcName)s - %(message)s (%(pathname)s:%(lineno)d)"
             
             def __init__(self):
@@ -2095,9 +1617,9 @@ def setup_logging(
         file_handler.setFormatter(LevelBasedFileFormatter())
         logger.addHandler(file_handler)
     
-    # ===== Console Handler =====
+    # ===== Console Handler (Rich) =====
     if RICH_AVAILABLE:
-        rich_handler = HANDLER(
+        rich_handler = RichColorLogHandler(
             lexer=lexer,
             show_background=show_background,
             show_time=show_time,
@@ -2121,31 +1643,18 @@ def setup_logging(
             show_icon=show_icon,
             icon_first=icon_first,
         )
-        rich_handler.setLevel(level)
-        rich_handler.setFormatter(CustomRichFormatter(
-            lexer=lexer,
-            show_background=show_background,
-            theme=theme,
-            icon_first=icon_first
-        ))
-        if icon_first:
-            icon_filter = IconFilter(icon_first=True)
-            rich_handler.addFilter(icon_filter)
-
         logger.addHandler(rich_handler)
     else:
-        console_handler = AnsiLogHandler(
-            lexer=lexer,
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(CustomFormatter(
             show_background=show_background,
-            format_template=None,
-            show_time=show_time,
-            show_name=True,
-            show_pid=True,
-            show_level=show_level,
-            show_path=show_path,
-            show_icon=show_icon,
-            icon_first=icon_first,
-        )
+            icon_first=icon_first  # NEW
+        ))
+        
+        if show_icon:
+            icon_filter = IconFilter(icon_first=icon_first)  # NEW
+            console_handler.addFilter(icon_filter)
+        
         logger.addHandler(console_handler)
     
     # ===== RabbitMQ Handler =====
@@ -2200,6 +1709,7 @@ def setup_logging(
                 facility=syslog_facility,
                 level=syslog_level
             )
+            # Format untuk syslog
             syslog_formatter = logging.Formatter(
                 '%(name)s[%(process)d]: %(levelname)s - %(message)s'
             )
@@ -2295,15 +1805,11 @@ def suppress_async_warning():
     warnings.filterwarnings('ignore', category=RuntimeWarning, 
                           message='coroutine.*was never awaited')
 
-def getLogger(*args, **kwargs):
-    kwargs.update({'HANDLER': RichColorLogHandler2})
-    return setup_logging(*args, **kwargs)
-
 def getLogger1(name=None, show_icon=True, show_time=True, show_level=False, 
               show_path=False, level=logging.DEBUG, icon_first=False, 
-              show_background=True, force_color=None, lexer=None):
+              show_background=True):  # NEW PARAMETER
     """
-    Quick logger setup with icon support.
+    Quick logger setup with icon support (simpler alternative to setup_logging).
     
     Args:
         name (str, optional): Logger name
@@ -2314,30 +1820,114 @@ def getLogger1(name=None, show_icon=True, show_time=True, show_level=False,
         level (int): Logging level
         icon_first (bool): If True, icon appears before datetime
         show_background (bool): Show background colors for log levels
-        force_color (bool, optional): Force color output
-        lexer (str, optional): Syntax lexer for highlighting
+        
+    Returns:
+        logging.Logger: Configured logger with icons
+    
+    Example:
+        >>> logger = getLogger('myapp', show_background=True)
+        >>> logger.info("Hello")  # ℹ️ Hello (with background color)
+    """
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.handlers.clear()
+    
+    if RICH_AVAILABLE and console:
+        try:
+            handler = RichColorLogHandler(
+                show_time=show_time,
+                show_level=show_level,
+                show_path=show_path,
+                show_icon=show_icon,
+                icon_first=icon_first,
+                show_background=show_background,  # NEW
+                markup=False,
+                omit_repeated_times=True,
+            )
+            logger.addHandler(handler)
+        except Exception as e:
+            handler = logging.StreamHandler()
+            formatter = CustomFormatter(
+                show_time=show_time, 
+                show_path=show_path,
+                icon_first=icon_first,
+                show_background=show_background  # NEW
+            )
+            handler.setFormatter(formatter)
+            
+            if show_icon:
+                icon_filter = IconFilter(icon_first=icon_first)
+                handler.addFilter(icon_filter)
+            
+            logger.addHandler(handler)
+    else:
+        handler = logging.StreamHandler()
+        formatter = CustomFormatter(
+            show_time=show_time, 
+            show_path=show_path,
+            icon_first=icon_first,
+            show_background=show_background  # NEW
+        )
+        handler.setFormatter(formatter)
+        
+        if show_icon:
+            icon_filter = IconFilter(icon_first=icon_first)
+            handler.addFilter(icon_filter)
+        
+        logger.addHandler(handler)
+    
+    logger.propagate = False
+    return logger
+
+def getLogger(name=None, show_icon=True, show_time=True, show_level=False, 
+              show_path=False, level=logging.DEBUG, icon_first=False, 
+              show_background=True, force_color=None, lexer=None):
+    """
+    Quick logger setup with icon support (simpler alternative to setup_logging).
+    
+    Args:
+        name (str, optional): Logger name
+        show_icon (bool): Show emoji icons
+        show_time (bool): Show timestamp
+        show_level (bool): Show log level text
+        show_path (bool): Show file path
+        level (int): Logging level
+        icon_first (bool): If True, icon appears before datetime
+        show_background (bool): Show background colors for log levels
+        force_color (bool, optional): Force color output (None=auto, True=force, False=disable)
         
     Returns:
         logging.Logger: Configured logger with icons
     """
+    # Configure IPython compatibility
     _configure_ipython_logging()
 
+    # Detect if we should use Rich
     use_rich = RICH_AVAILABLE and console
+    # print(f"use_rich [0]: {use_rich}")
 
-    # if use_rich:
-    #     logging.setLoggerClass(RichLogger)
-    # else:
-    logging.setLoggerClass(CustomLogger)
+    # Use custom logger class based on Rich availability
+    if use_rich:
+        logging.setLoggerClass(RichLogger)
+    else:
+        logging.setLoggerClass(AnsiLogger)
 
     logger = logging.getLogger(name)
     logger.setLevel(level)
     logger.handlers.clear()
     
+    # In IPython, prefer simple formatter to avoid async issues
     if _is_ipython() and force_color is None:
+        # print("check 1 ...")
         use_rich = False
+        # print(f"use_rich [1]: {use_rich}")
     
     if force_color is False:
+        # print("check 2 ...")
         use_rich = False
+        # print(f"use_rich [2]: {use_rich}")
+    
+    # print(f"use_rich [3]: {use_rich}")
 
     if use_rich:
         try:
@@ -2352,13 +1942,17 @@ def getLogger1(name=None, show_icon=True, show_time=True, show_level=False,
                 markup=False,
                 omit_repeated_times=True,
             )
+            # print(f"set handler to RichColorLogHandler: {handler}")
             logger.addHandler(handler)
-        except Exception:
+        except Exception as e:
+            print(traceback.format_exc()    )
+            # Fallback to basic handler
             use_rich = False
     
+    # print(f"use_rich: {use_rich}")
     if not use_rich:
+        # print("run with not use_rich ...")
         handler = AnsiLogHandler(
-            lexer=lexer,
             show_time=show_time,
             show_path=show_path,
             icon_first=icon_first,
@@ -2367,9 +1961,16 @@ def getLogger1(name=None, show_icon=True, show_time=True, show_level=False,
             show_pid=False,
             show_level=show_level,
             show_icon=show_icon,
+            lexer=None  # bisa di-override per log
         )
-        logger.addHandler(handler)
+    
+    if show_icon:
+        icon_filter = IconFilter(icon_first=icon_first)
+        handler.addFilter(icon_filter)
+    
+    logger.addHandler(handler)
 
+    # print(f"handler: {handler}")
     logger.propagate = False
 
     return logger
@@ -2390,24 +1991,30 @@ def getLoggerSimple(name=None, show_icon=True, icon_first=False,
     Returns:
         logging.Logger: Simple configured logger
     """
+    # Suppress IPython warnings
     _configure_ipython_logging()
-    
-    logging.setLoggerClass(CustomLogger)
     
     logger = logging.getLogger(name)
     logger.setLevel(level)
     logger.handlers.clear()
     
-    handler = AnsiLogHandler(
+    # Always use basic handler (no Rich)
+    handler = logging.StreamHandler()
+    formatter = CustomFormatter(
         show_time=True,
         show_path=False,
         icon_first=icon_first,
         show_background=show_background,
         show_name=False,
         show_pid=False,
-        show_level=False,
-        show_icon=show_icon,
+        show_level=False
     )
+    handler.setFormatter(formatter)
+    
+    if show_icon:
+        icon_filter = IconFilter(icon_first=icon_first)
+        handler.addFilter(icon_filter)
+    
     logger.addHandler(handler)
     logger.propagate = False
     
@@ -2423,6 +2030,23 @@ def test():
         console.print("[italic]Test function to verify logger setup (CustomFormatter).[/]\n")
     else:
         print("Test function to verify logger setup (CustomFormatter).\n")
+    
+    logger.emergency("This is an emergency message")
+    logger.alert("This is an alert message")
+    logger.critical("This is a critical message")
+    logger.error("This is an error message")
+    logger.warning("This is a warning message")
+    logger.notice("This is a notice message")
+    logger.info("This is an info message")
+    logger.debug("This is a debug message")
+    print("=" * shutil.get_terminal_size()[0])
+    
+    logger = setup_logging_custom(show_background=False)
+    
+    if console:
+        console.print("[italic]Test function (CustomFormatter), No Background Color.[/]\n")
+    else:
+        print("Test function (CustomFormatter), No Background Color.\n")
     
     logger.emergency("This is an emergency message")
     logger.alert("This is an alert message")
@@ -2476,11 +2100,20 @@ def test_brokers():
     else:
         print("\nTesting Message Broker Handlers\n")
     
+    # Test with all brokers enabled (will fail gracefully if not available)
     logger = setup_logging(
         name='broker_test',
         level='DEBUG',
         log_file=True,
         log_file_name='broker_test.log',
+        # Uncomment to test specific brokers
+        # rabbitmq=True,
+        # kafka=True,
+        # zeromq=True,
+        # syslog=True,
+        # db=True,
+        # db_type='sqlite',
+        # db_name='test_logs.db',
     )
     
     if console:
@@ -2499,48 +2132,10 @@ def test_brokers():
     
     if console:
         console.print("\n[green]Broker tests completed![/]")
-        console.print("[dim]Note: Enable specific brokers by passing parameters to setup_logging()[/]\n")
+        console.print("[dim]Note: Enable specific brokers by uncommenting parameters in test_brokers()[/]\n")
     else:
         print("\nBroker tests completed!")
-        print("Note: Enable specific brokers by passing parameters to setup_logging()\n")
-
-
-def test_lexer():
-    """Test lexer functionality with both setup_logging and getLogger."""
-    print("\n" + "=" * 70)
-    print("TESTING LEXER FUNCTIONALITY")
-    print("=" * 70 + "\n")
-    
-    # Test 1: setup_logging with lexer
-    print("Test 1: setup_logging() with lexer parameter")
-    print("-" * 70)
-    logger1 = setup_logging(name='test_setup', level='DEBUG', lexer='python')
-    
-    code_sample = """def hello():
-    print("Hello World")
-    return True"""
-    
-    logger1.info("Python code sample:", extra={'lexer': 'python'})
-    logger1.debug(code_sample, extra={'lexer': 'python'})
-    
-    # Test 2: getLogger with lexer
-    print("\nTest 2: getLogger() with lexer parameter")
-    print("-" * 70)
-    logger2 = getLogger('test_get', level=logging.DEBUG, lexer='python')
-    
-    logger2.info("Another Python code sample:")
-    logger2.debug(code_sample, extra={'lexer': 'python'})
-    
-    # Test 3: Without lexer
-    print("\nTest 3: Without lexer (normal text)")
-    print("-" * 70)
-    logger3 = getLogger('test_plain', level=logging.DEBUG)
-    logger3.info("Regular info message without syntax highlighting")
-    logger3.debug("Regular debug message without syntax highlighting")
-    
-    print("\n" + "=" * 70)
-    print("LEXER TEST COMPLETED")
-    print("=" * 70 + "\n")
+        print("Note: Enable specific brokers by uncommenting parameters in test_brokers()\n")
 
 
 def run_test():
@@ -2625,30 +2220,7 @@ def run_test():
     
     # Test broker handlers
     test_brokers()
-    
-    # Test lexer functionality
-    test_lexer()
 
 
 if __name__ == "__main__":
     run_test()
-
-    logger = setup_logging(level='DEBUG', show_background=True)
-    logger.critical("This is a critical message")
-    logger.error("This is an error message")
-    logger.warning("This is a warning message")
-    logger.notice("This is a notice message")
-    logger.info("This is an info message")
-    logger.debug("This is a debug message")
-    print("=" * shutil.get_terminal_size()[0])
-    
-    logger = setup_logging_custom(show_background=False)
-    
-    if console:
-        console.print("[italic]Test function (CustomFormatter), No Background Color.[/]\n")
-    else:
-        print("Test function (CustomFormatter), No Background Color.\n")
-    
-    logger.emergency("This is an emergency message")
-    logger.alert("This is an alert message")
-    

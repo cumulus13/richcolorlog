@@ -60,7 +60,7 @@ def fibonacci(n):
 print(fibonacci(10))
     '''
     
-    logger.info("Here's a Python code example:", extra={'lexer':'python'})
+    logger.info("Here's a Python code example:", lexer='python')
     # Note: To use syntax highlighting, you would need to modify the record
     # This is a simplified example
     logger.info(code_snippet)
