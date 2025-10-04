@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Setup script for Rich Color Log package.
 """
@@ -57,12 +58,17 @@ setup(
     version=get_version(),
     author="Hadi Cahyadi",
     author_email="cumulus13@gmail.com",
-    description="A beautiful and feature-rich logging package using Rich library",
+    description="Beautiful, powerful logging with Rich, emoji icons, syntax highlighting, and multi-output support (console, file, RabbitMQ, Kafka, DB, etc.)",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url=f"https://github.com/cumulus13/{NAME}",
+    project_urls={
+        "Bug Reports": "https://github.com/cumulus13/richcolorlog/issues",
+        "Source": "https://github.com/cumulus13/richcolorlog",
+    },
     # packages=find_packages(),
     packages=[NAME],
+    py_modules=["richcolorlog"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -78,18 +84,28 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: System :: Logging",
         "Topic :: Utilities",
+        "Environment :: Console",
     ],
-    python_requires=">=3.7",
+    keywords="logging, rich, color, emoji, syntax-highlighting, rabbitmq, kafka, syslog, database",
+    python_requires=">=3.8",
     install_requires=[
         "rich>=10.0.0",
     ],
     extras_require={
-        "dev": [
-            "pytest>=6.0",
-            "pytest-cov",
-            "black",
-            "flake8",
-            "mypy",
+        "rabbitmq": ["pika>=1.0.0"],
+        "kafka": ["kafka-python>=2.0.0"],
+        "zmq": ["pyzmq>=20.0.0"],
+        "db": [
+            "psycopg2-binary>=2.8.0; sys_platform != 'win32'",
+            "mysql-connector-python>=8.0.0",
+            "sqlite3; python_version >= '3.8'",  # built-in, tapi disebut untuk kejelasan
+        ],
+        "all": [
+            "pika>=1.0.0",
+            "kafka-python>=2.0.0",
+            "pyzmq>=20.0.0",
+            "psycopg2-binary>=2.8.0; sys_platform != 'win32'",
+            "mysql-connector-python>=8.0.0",
         ],
     },
     entry_points = {
@@ -104,4 +120,7 @@ setup(
         "Source": f"https://github.com/cumulus13/{NAME}",
         "Documentation": f"https://github.com/cumulus13/{NAME}#readme",
     },
+    license="MIT",
+    include_package_data=True,
+    zip_safe=False,
 )
