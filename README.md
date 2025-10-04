@@ -1,26 +1,51 @@
-# Rich Color Log
+# 🌈 **richcolorlog** – Beautiful, Powerful & Multi-Output Logging for Python
 
-A beautiful and feature-rich logging package using the [Rich](https://github.com/Textualize/rich) library for enhanced console output and file logging.
+> ✨ **Log like a pro** with emoji icons, syntax highlighting, custom log levels, and support for **console, file, RabbitMQ, Kafka, ZeroMQ, Syslog, and databases** — all in one package!
+
+[![PyPI version](https://img.shields.io/pypi/v/richcolorlog.svg?color=blue&logo=pypi)](https://pypi.org/project/richcolorlog/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/richcolorlog.svg?logo=python)](https://pypi.org/project/richcolorlog/)
+[![License](https://img.shields.io/github/license/cumulus13/richcolorlog?color=green)](https://github.com/cumulus13/richcolorlog/blob/main/LICENSE)
+[![Downloads](https://static.pepy.tech/badge/richcolorlog)](https://pepy.tech/project/richcolorlog)
 
 [![Screenshot](https://raw.githubusercontent.com/cumulus13/richcolorlog/master/screenshot.png)](https://raw.githubusercontent.com/cumulus13/richcolorlog/master/screenshot.png)
 
-## Features
+---
 
-- 🎨 **Beautiful console output** with Rich formatting
-- 📝 **Dual logging** - Console and file output simultaneously
-- 🎯 **Custom log levels** - EMERGENCY, FATAL, CRITICAL, ALERT, NOTICE
-- 🌈 **Syntax highlighting** - Support for code syntax highlighting in logs
+## 🚀 Features
+
+- ✅ **Rich Console Output** with colors, backgrounds, and **emoji icons** per log level  
+- 🎨 **Syntax Highlighting** for code snippets (Python, SQL, JSON, etc.)  
+- 🎯 **Custom Log Levels**: `EMERGENCY`, `ALERT`, `NOTICE`, `FATAL` (Syslog-compliant)  
+- 📦 **Multi-Handler Support**:  
+  - 🖥️ Console (Rich + ANSI fallback)  
+  - 📄 File (with level-based formatting)  
+  - 🐇 RabbitMQ  
+  - 📡 Kafka  
+  - 📡 ZeroMQ  
+  - 📡 Syslog  
+  - 🗄️ PostgreSQL / MySQL / MariaDB / SQLite  
+
+- 🧪 **Jupyter/IPython Friendly** (no async warnings!)  
+- 🧩 **Customizable Format Templates** (`%(asctime)s`, `%(funcName)s`, etc.)  
 - 🔍 **Enhanced tracebacks** - Rich tracebacks with local variables
 - ⚙️ **Highly configurable** - Customizable colors, themes, and formats
 - 🚀 **Easy to use** - Simple setup with sensible defaults
+- ⚡ Zero external dependencies (except `rich` and optional brokers)
 
-## Installation
+---
+
+## 📦 Installation
 
 Install from PyPI:
 
 ```bash
 pip install richcolorlog
 ```
+
+> 💡 **Optional**: Install extras for message brokers:
+> ```bash
+> pip install richcolorlog[rabbitmq,kafka,zmq,db]
+> ```
 
 Or install from source:
 
@@ -30,122 +55,153 @@ cd richcolorlog
 pip install -e .
 ```
 
-## Quick Start
+---
 
-### Basic Usage
+## 🧪 Quick Start
+
+### Basic Usage (Rich Console)
 
 ```python
-import logging
-from richcolorlog import setup_logging
+>>> from richcolorlog import setup_logging
 
-# Setup the logger use with rich library
-logger = setup_logging()
+>>> logger = setup_logging(
+        name="myapp",
+        show_background=True,
+        show_icon=True,
+        icon_first=True
+    )
+>>> logger.emergency("This is an emergency message")
+    logger.alert("This is an alert message")
+    logger.critical("This is a critical message")
+    logger.error("This is an error message")
+    logger.warning("This is a warning message")
+    logger.notice("This is a notice message")
+    logger.info("This is an info message")
+    logger.debug("This is a debug message")
+>>> # output
+    🆘 [10/04/25 14:12:07] EMERGENCY This is an emergency message
+    🚨 [10/04/25 14:12:07] ALERT    This is an alert message
+    💥 [10/04/25 14:12:07] CRITICAL This is a critical message
+    ❌ [10/04/25 14:12:07] ERROR    This is an error message
+    ⛔ [10/04/25 14:12:07] WARNING  This is a warning message
+    📢 [10/04/25 14:12:07] NOTICE   This is a notice message
+    🔔 [10/04/25 14:12:07] INFO     This is an info message
+    🐛 [10/04/25 14:12:07] DEBUG    This is a debug message
 
-# Use standard logging levels
-logger.debug("This is a debug message")
-logger.info("This is an info message") 
-logger.warning("This is a warning message")
-logger.error("This is an error message")
-logger.critical("This is a critical message")
+>>> FORMAT = "%(icon)s %(asctime)s - %(name)s - %(process)d - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+>>> logger = setup_logging(show_background=True, format_template=FORMAT, name="TEST")
+>>> code = """
+    def hello():
+        print("Hello World")
+    """
+>>> logger.info(code, lexer='python')
+>>> #output
+    🔔 [10/04/25 15:12:34] TEST 15448 INFO
 
-# Use custom levels
-logger.emergency("This is an emergency!")
-logger.fatal("This is fatal!")
-logger.alert("This is an alert!")
-logger.notice("This is a notice")
+    def hello():
+        print("Hello World")
 
-# Setup the logger use without rich library (ANSI Colors)
-logger = setup_logging_custom()
-# S/A
+>>> logger.debug("SELECT * FROM users", lexer="sql")  # Syntax highlighted!
+>>> #output
+    🐛 [10/04/25 15:12:35] TEST 15448 DEBUG                                
+    SELECT * FROM users
 
 ```
 
-### Advanced Configuration
-
-#### Using Custom Formatter (rich)
+### With Custom Format Template
 
 ```python
-import logging
-from richcolorlog import setup_logging
+template = "%(asctime)s | %(levelname)s | %(name)s | %(funcName)s() | %(message)s"
 
-# Setup with custom options
 logger = setup_logging(
-    show_locals=True,      # Show local variables in tracebacks
-    logfile="my_app.log",  # Custom log file name, option default file name [dot] log
-    lexer="python",        # Syntax highlighting for Python code, option default None
-    level=logging.INFO     # Set minimum log level or just 'INFO'
+    name="api",
+    format_template=template,
+    show_background=False
 )
 
-# Log with syntax highlighting
-logger.info("Here's some Python code:", extra={"lexer": "python"})
-logger.info("def hello_world():\n    print('Hello, World!')")
+logger.notice("User logged in successfully 🔑")
 ```
 
-other parameters:
-
- - show_level: bool = False
- - show_time: bool = True
- - omit_repeated_times: bool = True
- - show_path: bool = True
- - enable_link_path: bool = True
- - highlighter = None
- - markup: bool = False
- - rich_tracebacks: bool = False
- - tracebacks_width: Optional[int] = None
- - tracebacks_extra_lines: int = 3
- - tracebacks_theme: Optional[str] = None
- - tracebacks_word_wrap: bool = True
- - tracebacks_show_locals: bool = False
- - tracebacks_suppress: Iterable[Union[str ModuleType]] = ()
- - locals_max_length: int = 10
- - locals_max_string: int = 80
- - log_time_format: Union[str FormatTimeCallable] = "[%x %X]"
- - keywords: Optional[List[str]] = None
- - show_background = True
-
-#### Using Custom Formatter (ANSI Colors)
+### Simple Logger (No Rich, for Jupyter)
 
 ```python
-from richcolorlog import setup_logging_custom
+from richcolorlog import getLoggerSimple
 
-# Setup basic logging with ANSI color codes
-logger = setup_logging_custom()
-logger.info("This will be colored in the terminal")
+logger = getLoggerSimple(
+    name="notebook",
+    show_icon=True,
+    icon_first=False,
+    show_background=False
+)
+
+logger.info("Running analysis in Jupyter 📊")
 ```
 
-other parameters:
+---
 
- - level = Union[str, int] #example: 'DEBUG' or 'logging.DEBUG'
- - show_background = True
- - format_template=None
- - show_time=True
- - show_name=True
- - show_pid=True
- - show_level=True
- - show_path=True
+## 🎯 Advanced Examples
 
-## Custom Log Levels
+### 🔌 Send Logs to Kafka & File
 
-Rich Logger adds several custom log levels above the standard CRITICAL level:
+```python
+logger = setup_logging(
+    name="producer",
+    log_file=True,
+    log_file_name="app.log",
+    kafka=True,
+    kafka_host="localhost",
+    kafka_port=9092,
+    kafka_topic="app-logs",
+    level="DEBUG"
+)
 
-| Level | Numeric Value | Description |
-|-------|---------------|-------------|
-| NOTICE | 55 | Informational messages |
-| ALERT | 60 | Alert conditions |
-| CRITICAL | 65 | Critical conditions |
-| FATAL | 70 | Fatal errors |
-| EMERGENCY | 75 | System is unusable |
+logger.alert("Critical system event! 🚨")
+```
 
-## Configuration Options
+### 🗄️ Log to PostgreSQL
 
-### `setup_logging()`
+```python
+logger = setup_logging(
+    db=True,
+    db_type="postgresql",
+    db_host="localhost",
+    db_name="logs",
+    db_user="admin",
+    db_password="secret"
+)
 
-- `show_locals` (bool): Show local variables in tracebacks (default: False)
-- `logfile` (str): Path to log file. Auto-generated if None (default: None)
-- `lexer` (str): Syntax highlighter for code blocks (default: None)
-- `level` (int): Minimum logging level (default: logging.DEBUG)
+logger.emergency("Database connection lost! 🆘")
+```
 
-### Available Lexers
+### 🧠 Custom Log Levels
+
+```python
+logger.notice("New user registered 📢")      # Custom level 25
+logger.fatal("Fatal error — shutting down 💀")  # Level 55
+logger.alert("Immediate action required! 🚨")   # Level 59
+```
+
+---
+
+## 🛠️ Configuration Options
+
+| Parameter | Description | Default |
+|---------|-------------|--------|
+| `name` | Logger name | `None` |
+| `level` | Log level (`DEBUG`, `INFO`, etc.) | `"DEBUG"` |
+| `show_background` | Enable colored backgrounds | `True` |
+| `show_icon` | Show emoji icons | `True` |
+| `icon_first` | Icon before timestamp | `True` |
+| `format_template` | Custom format string | `None` |
+| `lexer` | Default syntax highlighter | `None` |
+| `log_file` | Enable file logging | `False` |
+| `kafka`, `rabbitmq`, `zeromq`, `syslog`, `db` | Enable respective handlers | `False` |
+
+> 💡 **All RichHandler options** (like `tracebacks_show_locals`, `keywords`, etc.) are also supported!
+
+---
+
+## 🦝 Available Lexers
 
 You can use any lexer supported by Pygments for syntax highlighting:
 
@@ -157,94 +213,97 @@ You can use any lexer supported by Pygments for syntax highlighting:
 - `"bash"` - Shell scripts
 - And many more...
 
-## Examples
+## 🐇 Custom Log Levels
 
-### Exception Handling with Rich Tracebacks
+richcolorlog adds several custom log levels above the standard CRITICAL level:
 
-```python
-import logging
-from richcolorlog import setup_logging
+| Level | Numeric Value | Description |
+|-------|---------------|-------------|
+| NOTICE | 55 | Informational messages |
+| ALERT | 60 | Alert conditions |
+| CRITICAL | 65 | Critical conditions |
+| FATAL | 70 | Fatal errors |
+| EMERGENCY | 75 | System is unusable |
 
-logger = setup_logging(show_locals=True)
+---
 
-def divide_numbers(a, b):
-    try:
-        result = a / b
-        logger.info(f"Division result: {result}")
-        return result
-    except ZeroDivisionError:
-        logger.exception("Cannot divide by zero!")
-        raise
+## 🧩 Supported Log Record Fields in Templates
 
-# This will show a beautiful traceback with local variables
-divide_numbers(10, 0)
+You can use **any standard `LogRecord` field** in your `format_template`:
+
+```text
+%(asctime)s       → 2025-10-03 14:30:00
+%(name)s          → myapp
+%(levelname)s     → INFO
+%(message)s       → Your log message
+%(filename)s      → app.py
+%(lineno)d        → 42
+%(funcName)s      → main
+%(process)d       → 12345
+%(thread)d        → 67890
+%(module)s        → app
+%(pathname)s      → /path/to/app.py
+%(created)f       → 1728000000.123
+%(msecs)d         → 123
+%(relativeCreated)d → 456
+%(processName)s   → MainProcess
+%(threadName)s    → Thread-1
+%(icon)s          → 🐞 (auto-injected)
 ```
 
-### Logging with Context Information
+> ✅ **Custom fields** from `extra={}` are also supported!
 
-```python
-import logging
-from richcolorlog import setup_logging, get_def
+---
 
-logger = setup_logging()
+## 🌐 Compatibility
 
-class MyClass:
-    def my_method(self):
-        context = get_def()  # Gets current method/class context
-        logger.info(f"{context}Executing method")
+- ✅ **Python 3.8+**
+- ✅ **Jupyter Notebook / IPython** (auto-detects and disables async features)
+- ✅ **Terminals** (Windows, macOS, Linux)
+- ✅ **Docker / CI Environments** (falls back to ANSI if needed)
 
-obj = MyClass()
-obj.my_method()
-```
+---
 
-### Code Logging with Syntax Highlighting
+## 📚 Why Use `richcolorlog`?
 
-```python
-import logging
-from richcolorlog import setup_logging
+| Feature | Standard `logging` | `rich` | `richcolorlog` |
+|--------|-------------------|--------|----------------|
+| Emoji Icons | ❌ | ❌ | ✅ |
+| Custom Levels (`NOTICE`, `ALERT`) | ❌ | ❌ | ✅ |
+| Syntax Highlighting | ❌ | ❌ | ✅ |
+| Multi-Output (File + Kafka + DB) | Manual | ❌ | ✅ |
+| Jupyter Safe | ❌ | ⚠️ | ✅ |
+| Custom Format Templates | ✅ | Limited | ✅ + **icon support** |
 
-logger = setup_logging()
+---
 
-code_snippet = '''
-def fibonacci(n):
-    if n <= 1:
-        return n
-    return fibonacci(n-1) + fibonacci(n-2)
-'''
+## 🙏 Acknowledgements
 
-# Log code with Python syntax highlighting
-logger.info("Generated function:", extra={"lexer": "python"})
-logger.info(code_snippet)
-```
+- Built on top of [`rich`](https://github.com/Textualize/rich) by Will McGugan  
+- Inspired by `loguru`, `structlog`, and syslog standards  
+- Icons from [EmojiOne](https://emojione.com/)
 
-## File Structure
+---
 
-When you install this package, your project structure should look like:
-
-```
-your_project/
-├── your_script.py
-├── your_script.log  # Auto-generated log file
-└── ...
-```
-
-## Requirements
-
-- Python >= 3.7
-- rich >= 10.0.0
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
+## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+MIT © [Hadi Cahyadi](https://github.com/cumulus13)
 
-- [Rich](https://github.com/Textualize/rich) - For the amazing terminal formatting library
-- The Python logging module - For the solid foundation
+---
+
+## 🔗 Links
+
+- 📦 **PyPI**: https://pypi.org/project/richcolorlog/  
+- 💻 **GitHub**: https://github.com/cumulus13/richcolorlog  
+- 📧 **Author**: cumulus13@gmail.com
+
+---
+
+> 💬 **Made with ❤️ for developers who love beautiful, informative logs!**  
+> ⭐ **Star the repo if you find it useful!**
+
 
 ## author
 [Hadi Cahyadi](mailto:cumulus13@gmail.com)
