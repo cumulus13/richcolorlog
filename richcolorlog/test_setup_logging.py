@@ -7,7 +7,7 @@
 
 import os
 # from logger3 import getLogger as setup_logging
-from logger3 import setup_logging
+from logger import setup_logging
 
 print("Test function (CustomFormatter), No Background Color.\n")
 FORMAT = "%(icon)s %(asctime)s - %(name)s - %(process)d - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
