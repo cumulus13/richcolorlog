@@ -1466,7 +1466,7 @@ class RichColorLogHandler(RichHandler):
             pass
 
         # Add icon filter
-        print(f"self.show_icon: {self.show_icon}")
+        # print(f"self.show_icon: {self.show_icon}")
         if self.show_icon:
             icon_filter = IconFilter(icon_first=icon_first)
             self.addFilter(icon_filter)
