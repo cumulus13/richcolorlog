@@ -1,5 +1,5 @@
 import os
-from logger3 import setup_logging_custom
+from logger import setup_logging_custom
 
 print("Test function (CustomFormatter), No Background Color.\n")
 
