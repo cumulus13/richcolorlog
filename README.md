@@ -32,6 +32,7 @@
 - ⚙️ **Highly Configurable**: `icon_first`, `level_in_message`, `show_background`, etc.  
 - 🚀 **Easy to use** - Simple setup with sensible defaults
 - ⚡ **Zero required dependencies** (only `rich` for Rich mode; brokers optional)
+- 🎨 **Support any terminal** - with ansi color Fallback
 
 ---
 
@@ -347,7 +348,7 @@ You can use **any standard `LogRecord` field** in your `format_template`:
 
 ## 🙏 Acknowledgements
 
-- Built on top of [`rich`](https://github.com/Textualize/rich) by Will McGugan  
+- Built on top of [`rich`](https://github.com/Textualize/rich) by Will McGugan with ansi color Fallback if no rich installed  
 - Icons from [EmojiOne](https://emojione.com/)
 ---
 
