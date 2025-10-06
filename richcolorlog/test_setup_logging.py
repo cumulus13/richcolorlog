@@ -7,7 +7,7 @@
 
 import os
 # from logger3 import getLogger as setup_logging
-from logger3 import setup_logging
+from logger import setup_logging
 
 print("Test function (CustomFormatter), No Background Color.\n")
 FORMAT = "%(icon)s %(asctime)s - %(name)s - %(process)d - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
@@ -27,7 +27,7 @@ print("\n", "="*(os.get_terminal_size()[0] - 3), "\n")
 
 print("Test function (CustomFormatter), Background Color.\n")
 
-logger = setup_logging(show_background=True, format_template=FORMAT, name="TEST [2]")
+logger = setup_logging(show_background=True, format_template=FORMAT, name="TEST [2]", level_in_message=True)
 
 logger.critical("This is a critical message")
 logger.error("This is an error message")
