@@ -689,8 +689,8 @@ class CustomFormatter(logging.Formatter):
                 show_time, show_name, show_pid, show_level, show_path
             )
 
-        if not show_background:
-            self.COLORS = self.COLORS.copy()
+        # if not show_background:
+        #     self.COLORS = self.COLORS.copy()
 
             # self.COLORS = {
             #     'debug': debug_color or "\x1b[38;2;255;170;0m",
@@ -705,35 +705,20 @@ class CustomFormatter(logging.Formatter):
             #     'reset': "\x1b[0m"
             # }
 
-            self.COLORS = Colors(
-                color_type='ansi',
-                show_background=False,
-                emergency_color=emergency_color,
-                alert_color=alert_color,
-                critical_color=critical_color,
-                error_color=error_color,
-                warning_color=warning_color,
-                fatal_color=fatal_color,
-                notice_color=notice_color,
-                debug_color=debug_color,
-                info_color=info_color,
+        self.COLORS = Colors(
+            color_type='ansi',
+            show_background=show_background,
+            emergency_color=emergency_color,
+            alert_color=alert_color,
+            critical_color=critical_color,
+            error_color=error_color,
+            warning_color=warning_color,
+            fatal_color=fatal_color,
+            notice_color=notice_color,
+            debug_color=debug_color,
+            info_color=info_color,
 
-            ).check()
-        else:
-            self.COLORS = Colors(
-                color_type='ansi',
-                show_background=True,
-                emergency_color=emergency_color,
-                alert_color=alert_color,
-                critical_color=critical_color,
-                error_color=error_color,
-                warning_color=warning_color,
-                fatal_color=fatal_color,
-                notice_color=notice_color,
-                debug_color=debug_color,
-                info_color=info_color,
-
-            ).check()
+        ).check()
 
         self._build_formatters()
         
@@ -1861,61 +1846,33 @@ class RichColorLogHandler(RichHandler):
 
         self.level_styles = dict(self.LEVEL_STYLES)
 
-        if not show_background:
-            COLORS = Colors(
-                color_type='rich', 
-                show_background=True,
-                emergency_color=emergency_color,
-                alert_color=alert_color,
-                critical_color=critical_color,
-                error_color=error_color,
-                warning_color=warning_color,
-                fatal_color=fatal_color,
-                notice_color=notice_color,
-                debug_color=debug_color,
-                info_color=info_color,
-                ).check()
-    
-            self.LEVEL_STYLES = {
-                logging.DEBUG: COLORS['debug'],
-                logging.INFO: COLORS['info'],
-                logging.WARNING: COLORS['warning'],
-                logging.ERROR: COLORS['error'],
-                logging.CRITICAL: COLORS['critical'],
-                CRITICAL_LEVEL: COLORS['critical'],
-                FATAL_LEVEL: COLORS['fatal'],
-                EMERGENCY_LEVEL: COLORS['emergency'],
-                ALERT_LEVEL: COLORS['alert'],
-                NOTICE_LEVEL: COLORS['notice'],
-            }
+        
+        COLORS = Colors(
+            color_type='rich',
+            show_background=self.show_background,
+            emergency_color=emergency_color,
+            alert_color=alert_color,
+            critical_color=critical_color,
+            error_color=error_color,
+            warning_color=warning_color,
+            fatal_color=fatal_color,
+            notice_color=notice_color,
+            debug_color=debug_color,
+            info_color=info_color,
+            ).check()
 
-        else:
-            COLORS = Colors(
-                color_type='rich',
-                show_background=True,
-                emergency_color=emergency_color,
-                alert_color=alert_color,
-                critical_color=critical_color,
-                error_color=error_color,
-                warning_color=warning_color,
-                fatal_color=fatal_color,
-                notice_color=notice_color,
-                debug_color=debug_color,
-                info_color=info_color,
-                ).check()
-    
-            self.LEVEL_STYLES = {
-                logging.DEBUG: COLORS['debug'],
-                logging.INFO: COLORS['info'],
-                logging.WARNING: COLORS['warning'],
-                logging.ERROR: COLORS['error'],
-                logging.CRITICAL: COLORS['critical'],
-                CRITICAL_LEVEL: COLORS['critical'],
-                FATAL_LEVEL: COLORS['fatal'],
-                EMERGENCY_LEVEL: COLORS['emergency'],
-                ALERT_LEVEL: COLORS['alert'],
-                NOTICE_LEVEL: COLORS['notice'],
-            }
+        self.LEVEL_STYLES = {
+            logging.DEBUG: COLORS['debug'],
+            logging.INFO: COLORS['info'],
+            logging.WARNING: COLORS['warning'],
+            logging.ERROR: COLORS['error'],
+            logging.CRITICAL: COLORS['critical'],
+            CRITICAL_LEVEL: COLORS['critical'],
+            FATAL_LEVEL: COLORS['fatal'],
+            EMERGENCY_LEVEL: COLORS['emergency'],
+            ALERT_LEVEL: COLORS['alert'],
+            NOTICE_LEVEL: COLORS['notice'],
+        }
 
 
         if os.getenv('DEBUG', '0').lower() in ['1', 'true', 'True']:
@@ -2950,6 +2907,7 @@ def run_test():
     # Test lexer functionality
     test_lexer()
 
+
 def test():
     try:
         from .test import test as TEST
@@ -2966,7 +2924,7 @@ if __name__ == "__main__":
     # logger.error("This is an error message")
     # logger.warning("This is a warning message")
     # logger.notice("This is a notice message")
-    # logger.info("This is an info message")
+    # logger.info("This is an info message" )
     # logger.debug("This is a debug message")
     # print("=" * shutil.get_terminal_size()[0])
     
