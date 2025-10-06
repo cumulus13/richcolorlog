@@ -5,12 +5,13 @@ Example usage of the rich-logger package.
 
 import logging
 # from richcolorlog import setup_logging, get_def
-from logger3 import setup_logging, get_def
+from logger import setup_logging, get_def
 
 
 def main():
     """Main function demonstrating rich-logger usage."""
     # Setup the logger with enhanced features
+    
     logger = setup_logging(
         show_locals=True,      # Show local variables in tracebacks
         log_file_name="example.log", # Custom log file

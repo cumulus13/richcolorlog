@@ -27,7 +27,7 @@ print("\n", "="*(os.get_terminal_size()[0] - 3), "\n")
 
 print("Test function (CustomFormatter), Background Color.\n")
 
-logger = setup_logging(show_background=True, format_template=FORMAT, name="TEST [2]")
+logger = setup_logging(show_background=True, format_template=FORMAT, name="TEST [2]", level_in_message=True)
 
 logger.critical("This is a critical message")
 logger.error("This is an error message")

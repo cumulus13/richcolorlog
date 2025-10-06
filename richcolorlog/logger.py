@@ -1046,6 +1046,7 @@ class AnsiLogHandler(logging.StreamHandler):
         show_path=True,
         show_icon=True,
         icon_first=False,
+        level_in_message=False,
         **kwargs
     ):
         super().__init__()
@@ -1054,6 +1055,7 @@ class AnsiLogHandler(logging.StreamHandler):
         self.show_icon = show_icon
         self.icon_first = icon_first
         self.format_template = format_template
+        self.level_in_message=level_in_message
         
         self.setFormatter(CustomFormatter(
             show_background,
@@ -1074,7 +1076,15 @@ class AnsiLogHandler(logging.StreamHandler):
     def emit(self, record):
         """Emit a record with pygments highlighting + icon."""
         try:
-            msg = self.format(record)
+            try:
+                # Dapatkan pesan asli
+                original_msg = record.getMessage()
+                if self.level_in_message:
+                    record.msg = f"{record.levelname} - {original_msg}"  # Ubah sementara
+                msg = self.format(record)
+                
+            finally:
+                msg = self.format(record)
             
             # Apply lexer highlighting if available
             lexer_name = getattr(record, "lexer", None) or self.lexer
@@ -1363,12 +1373,13 @@ class RichColorLogHandler(RichHandler):
         icon_first=False, 
         theme="fruity",
         format_template=None,
+        level_in_message: bool = False,
         
         # RESTORE semua RichHandler arguments:
         level: Union[int, str] = 'DEBUG',
         console: Optional[object] = None,
         show_time: bool = True,
-        omit_repeated_times: bool = True,
+        omit_repeated_times: bool = False,
         show_level: bool = True,
         show_path: bool = True,
         enable_link_path: bool = True,
@@ -1399,6 +1410,8 @@ class RichColorLogHandler(RichHandler):
         self._render_emoji_flag = render_emoji
         self.format_template = format_template
         self.format_template = format_template.strip() if format_template else format_template
+        self.level_in_message = level_in_message
+        self._last_shown_time = None
 
         self.level = level
         self.console = console
@@ -1424,7 +1437,7 @@ class RichColorLogHandler(RichHandler):
         self.keywords = keywords
 
         # Remove custom params from kwargs
-        for key in ["lexer", "show_background", "render_emoji", "show_icon", "icon_first", "theme"]:
+        for key in ["lexer", "show_background", "render_emoji", "show_icon", "icon_first", "theme", "level_in_message"]:
             kwargs.pop(key, None)
 
         # Pass All Arguments to Parent Richhandler
@@ -1441,11 +1454,25 @@ class RichColorLogHandler(RichHandler):
                 logging.WARNING: "#FFFF00",              # ← NO BACKGROUND
                 logging.ERROR: "red",
                 logging.CRITICAL: "bold #550000",
+                CRITICAL_LEVEL: "bold #550000",
                 FATAL_LEVEL: "#0055FF",
                 EMERGENCY_LEVEL: "#AA00FF",
                 ALERT_LEVEL: "#005500",
                 NOTICE_LEVEL: "#00FFFF",
             }
+        else:
+            LEVEL_STYLES = {
+            logging.DEBUG: "bold #FFAA00",
+            logging.INFO: "bold #00FFFF",
+            logging.WARNING: "black on #FFFF00",
+            logging.ERROR: "white on red",
+            logging.CRITICAL: "bright_white on #550000",
+            CRITICAL_LEVEL: "bright_white on #550000",
+            FATAL_LEVEL: "bright_white on #0055FF",
+            EMERGENCY_LEVEL: "bright_white on #AA00FF",
+            ALERT_LEVEL: "bright_white on #005500",
+            NOTICE_LEVEL: "black on #00FFFF",
+        }
 
         if os.getenv('DEBUG', '0').lower() in ['1', 'true', 'True']:
             print(f"DEBUG INIT: format_template={format_template}")
@@ -1466,7 +1493,7 @@ class RichColorLogHandler(RichHandler):
             pass
 
         # Add icon filter
-        print(f"self.show_icon: {self.show_icon}")
+        # print(f"self.show_icon: {self.show_icon}")
         if self.show_icon:
             icon_filter = IconFilter(icon_first=icon_first)
             self.addFilter(icon_filter)
@@ -1529,7 +1556,23 @@ class RichColorLogHandler(RichHandler):
             # Standard fields
             dt = datetime.fromtimestamp(record.created)
             log_time = self.log_time_format(dt) if callable(self.log_time_format) else dt.strftime(self.log_time_format)
-            all_components['time'] = Text(log_time, style="log.time")
+            # all_components['time'] = Text(log_time, style="log.time")
+            should_show_time = True
+            if self.omit_repeated_times:
+                if self._last_shown_time == log_time:
+                    should_show_time = False
+                else:
+                    self._last_shown_time = log_time
+
+            # Simpan panjang waktu untuk padding nanti
+            time_width = len(log_time)
+
+            if should_show_time:
+                all_components['time'] = Text(log_time, style="log.time")
+            else:
+                # Ganti dengan spasi sepanjang waktu asli
+                all_components['time'] = Text(" " * time_width, style="log.time")
+
             all_components['name'] = Text(record.name, style="cyan")
             all_components['process'] = Text(str(record.process), style="magenta")
             all_components['thread'] = Text(str(record.thread), style="magenta")
@@ -1543,10 +1586,22 @@ class RichColorLogHandler(RichHandler):
             all_components['thread_name'] = Text(record.threadName, style="magenta")
             
             # Message
+            # if has_lexer:
+            #     all_components['message'] = Text("")
+            # else:
+            #     all_components['message'] = self.render_message(record, record.getMessage())
+
+            original_message = record.getMessage()
+            if self.level_in_message and not has_lexer:
+                # Tambahkan "LEVEL - " di depan pesan
+                enhanced_message = f"{record.levelname} - {original_message}"
+            else:
+                enhanced_message = original_message
+
             if has_lexer:
                 all_components['message'] = Text("")
             else:
-                all_components['message'] = self.render_message(record, record.getMessage())
+                all_components['message'] = self.render_message(record, enhanced_message)
             
             # === Icon: Always prepare if show_icon = true ===
             if self.show_icon:
@@ -1567,20 +1622,60 @@ class RichColorLogHandler(RichHandler):
                     all_components[key] = Text(str(value), style="dim italic")
 
             # === Determine the sequence of components ===
+            # if hasattr(self, 'template_components') and self.template_components:
+            #     components_order = self.template_components.copy()
+                
+            #     if self.show_icon and self.icon_first:
+            #         if 'icon' in components_order:
+            #             components_order.remove('icon')
+            #         components_order.insert(0, 'icon')
+            #     # If the template does not contain 'icon', but show_icon = true → add automatically
+            #     if self.show_icon and 'icon' not in components_order:
+            #         if self.icon_first:
+            #             components_order.insert(0, 'icon')
+            #         else:
+            #             # Look for the message message, then insert the previous icon
+            #             try:
+            #                 msg_idx = components_order.index('message')
+            #                 components_order.insert(msg_idx, 'icon')
+            #             except ValueError:
+            #                 components_order.append('icon')  # fallback
+            # else:
+            #     # Default order (without template)
+            #     components_order = []
+            #     if self.show_icon and self.icon_first:
+            #         components_order.append('icon')
+            #     if self.show_time:
+            #         components_order.append('time')
+            #     if self.show_level:
+            #         components_order.append('level')
+            #     components_order.append('message')
+            #     # if self.show_path:
+            #     #     components_order.append('filename')
+            #     #     components_order.append('lineno')
+            #     if self.show_path:
+            #         components_order.extend(['filename', 'lineno'])
+            #     if self.show_icon and not self.icon_first:
+            #         components_order.append('icon')
+
             if hasattr(self, 'template_components') and self.template_components:
                 components_order = self.template_components.copy()
                 
-                # If the template does not contain 'icon', but show_icon = true → add automatically
-                if self.show_icon and 'icon' not in components_order:
+                # Pastikan icon ditangani sesuai show_icon dan icon_first
+                if self.show_icon:
+                    # Hapus icon jika sudah ada (untuk menghindari duplikat dari template)
+                    if 'icon' in components_order:
+                        components_order.remove('icon')
+                    # Tambahkan sesuai posisi
                     if self.icon_first:
                         components_order.insert(0, 'icon')
                     else:
-                        # Look for the message message, then insert the previous icon
+                        # Coba sisipkan sebelum 'message', atau di akhir
                         try:
                             msg_idx = components_order.index('message')
                             components_order.insert(msg_idx, 'icon')
                         except ValueError:
-                            components_order.append('icon')  # fallback
+                            components_order.append('icon')
             else:
                 # Default order (without template)
                 components_order = []
@@ -1592,13 +1687,13 @@ class RichColorLogHandler(RichHandler):
                     components_order.append('level')
                 components_order.append('message')
                 if self.show_path:
-                    components_order.append('filename')
-                    components_order.append('lineno')
+                    components_order.extend(['filename', 'lineno'])
                 if self.show_icon and not self.icon_first:
                     components_order.append('icon')
 
             # === Build table ===
-            table = Table.grid(padding=(0, 1, 0, 0), pad_edge=False, expand=True)
+            # table = Table.grid(padding=(0, 1, 0, 0), pad_edge=False, expand=True)
+            table = Table.grid(padding=(0), pad_edge=False, expand=True)
             for comp in components_order:
                 if comp == 'message':
                     table.add_column(justify="left", ratio=1)
@@ -1607,12 +1702,23 @@ class RichColorLogHandler(RichHandler):
                 else:
                     table.add_column(justify="left", no_wrap=True)
 
+            # row = []
+            # for comp in components_order:
+            #     if comp in all_components:
+            #         row.append(all_components[comp])
+            #     else:
+            #         row.append(Text(f"<{comp}>", style="dim red"))
+
             row = []
-            for comp in components_order:
+            for i, comp in enumerate(components_order):
                 if comp in all_components:
-                    row.append(all_components[comp])
+                    text_obj = all_components[comp]
+                    # Tambahkan spasi setelah setiap kolom (kecuali message)
+                    if comp != 'message':
+                        text_obj.append(" ")
+                    row.append(text_obj)
                 else:
-                    row.append(Text(f"<{comp}>", style="dim red"))
+                    row.append(Text(" "))
 
             table.add_row(*row)
             self.console.print(table)
@@ -1755,6 +1861,7 @@ def setup_logging(
     basic=True,
     theme: str ='fruity',
     format_template=None,
+    level_in_message=False,
     
     # RESTORE semua RichHandler arguments:
     level: Union[int, str] = 'DEBUG',
@@ -1834,7 +1941,7 @@ def setup_logging(
     Returns:
         logging.Logger: Configured logger instance
     """
-
+    # print(f"omit_repeated_times: {omit_repeated_times}")
     if exceptions is None:
         exceptions = []
 
@@ -1893,37 +2000,38 @@ def setup_logging(
     # ===== Console Handler =====
     if RICH_AVAILABLE:
         rich_handler = HANDLER(
-            lexer,
-            show_background,
-            render_emoji,
-            show_icon,
-            icon_first, 
-            theme,
-            format_template,
-            
+            lexer=lexer,
+            show_background=show_background,
+            render_emoji=render_emoji,
+            show_icon=show_icon,
+            icon_first=icon_first, 
+            theme=theme,
+            format_template=format_template,
+            level_in_message=level_in_message,
+        
             # RESTORE all RichHandler arguments:
-            level,
-            console,
-            show_time,
-            omit_repeated_times,
-            show_level,
-            show_path,
-            enable_link_path,
-            highlighter,
-            markup,
-            rich_tracebacks,
-            tracebacks_width,
-            tracebacks_code_width,
-            tracebacks_extra_lines,
-            tracebacks_theme,
-            tracebacks_word_wrap,
-            tracebacks_show_locals,
-            tracebacks_suppress,
-            tracebacks_max_frames,
-            locals_max_length,
-            locals_max_string,
-            log_time_format,
-            keywords,
+            level=level,
+            console=console,
+            show_time=show_time,
+            omit_repeated_times=omit_repeated_times,
+            show_level=show_level,
+            show_path=show_path,
+            enable_link_path=enable_link_path,
+            highlighter=highlighter,
+            markup=markup,
+            rich_tracebacks=rich_tracebacks,
+            tracebacks_width=tracebacks_width,
+            tracebacks_code_width=tracebacks_code_width,
+            tracebacks_extra_lines=tracebacks_extra_lines,
+            tracebacks_theme=tracebacks_theme,
+            tracebacks_word_wrap=tracebacks_word_wrap,
+            tracebacks_show_locals=tracebacks_show_locals,
+            tracebacks_suppress=tracebacks_suppress,
+            tracebacks_max_frames=tracebacks_max_frames,
+            locals_max_length=locals_max_length,
+            locals_max_string=locals_max_string,
+            log_time_format=log_time_format,
+            keywords=keywords,
         )
 
         rich_handler.setLevel(level)
@@ -1950,6 +2058,7 @@ def setup_logging(
             show_path=show_path,
             show_icon=show_icon,
             icon_first=icon_first,
+            level_in_message=level_in_messages
         )
         logger.addHandler(console_handler)
     
