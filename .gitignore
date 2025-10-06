@@ -37,3 +37,6 @@ test.log*
 
 # Added entries (1 items)
 *.sublime-project
+
+# Added entries (1 items)
+build0.bat

@@ -1,10 +1,10 @@
 try:
-	from . logger import run_test
+	from . logger import test
 except Exception as e:
-	from logger import run_test
+	from logger import test
 
 def main():
-	run_test()
+	test()
 
 if __name__ == '__main__':
-	run_test()
+	test()

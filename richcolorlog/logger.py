@@ -2736,7 +2736,7 @@ def getLoggerSimple(name=None, show_icon=True, icon_first=False,
 
 # ==================== Test Functions ====================
 
-def test():
+def test1():
     """Test function to verify logger setup with different configurations."""
     logger = setup_logging_custom()
     
@@ -2950,26 +2950,33 @@ def run_test():
     # Test lexer functionality
     test_lexer()
 
+def test():
+    try:
+        from .test import test as TEST
+    except:
+        from test import test as TEST
+
+    TEST()
 
 if __name__ == "__main__":
-    run_test()
+    # run_test()
 
-    logger = setup_logging(level='DEBUG', show_background=True)
-    logger.critical("This is a critical message")
-    logger.error("This is an error message")
-    logger.warning("This is a warning message")
-    logger.notice("This is a notice message")
-    logger.info("This is an info message")
-    logger.debug("This is a debug message")
-    print("=" * shutil.get_terminal_size()[0])
+    # logger = setup_logging(level='DEBUG', show_background=True)
+    # logger.critical("This is a critical message")
+    # logger.error("This is an error message")
+    # logger.warning("This is a warning message")
+    # logger.notice("This is a notice message")
+    # logger.info("This is an info message")
+    # logger.debug("This is a debug message")
+    # print("=" * shutil.get_terminal_size()[0])
     
-    logger1 = setup_logging_custom(show_background=False, name="TEST 2")
+    # logger1 = setup_logging_custom(show_background=False, name="TEST 2")
     
-    if console:
-        console.print("[italic]Test function (CustomFormatter), No Background Color.[/]\n")
-    else:
-        print("Test function (CustomFormatter), No Background Color.\n")
+    # if console:
+    #     console.print("[italic]Test function (CustomFormatter), No Background Color.[/]\n")
+    # else:
+    #     print("Test function (CustomFormatter), No Background Color.\n")
     
-    logger1.emergency("This is an emergency message")
-    logger1.alert("This is an alert message")
-    
+    # logger1.emergency("This is an emergency message")
+    # logger1.alert("This is an alert message")
+    test()
