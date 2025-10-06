@@ -6,7 +6,6 @@
 # License: MIT
 
 import os
-# from logger3 import getLogger as setup_logging
 from logger import setup_logging
 
 print("Test function (CustomFormatter), No Background Color.\n")
@@ -52,8 +51,8 @@ code = """
         print("Hello World")
     """
 
-logger.info(code, lexer='python')  # Akan di-highlight sebagai Python code
-logger.debug("SELECT * FROM users", lexer='sql')  # Akan di-highlight sebagai SQL
+logger.info(code, lexer='python')  # Will be highlighted as a python code
+logger.debug("SELECT * FROM users", lexer='sql')  # Will be highlighted as SQL
 
 print("\n", "="*(os.get_terminal_size()[0] - 3), "\n")
 
@@ -67,8 +66,8 @@ code = """
         print("Hello World")
     """
 
-logger.info(code, lexer='python')  # Akan di-highlight sebagai Python code
-logger.debug("SELECT * FROM users", lexer='sql')  # Akan di-highlight sebagai SQL
+logger.info(code, lexer='python')  # Will be highlighted as a python code
+logger.debug("SELECT * FROM users", lexer='sql')  # Will be highlighted as SQL
 
 
 print("\n", "="*(os.get_terminal_size()[0] - 3), "\n")
@@ -79,7 +78,7 @@ print("Test function (CustomFormatter) + No Background + custom variable format 
 FORMAT="%(asctime)s [%(levelname)s] %(name)s | user=%(user_id)s | %(message)s"
 logger = setup_logging(show_background=False, format_template=FORMAT, name="TEST [5]")
 
-# Logging dengan field kustom
+# Logging with custom field fields
 logger.info("User logged in", extra={"user_id": "U12345"})
 
 print("\n", "="*(os.get_terminal_size()[0] - 3), "\n")
@@ -90,6 +89,6 @@ print("Test function (CustomFormatter) + Background + custom variable format \n"
 FORMAT="%(asctime)s [%(levelname)s] %(name)s | user=%(user_id)s | %(message)s"
 logger = setup_logging(show_background=True, format_template=FORMAT, name="TEST [6]")
 
-# Logging dengan field kustom
+# Logging with custom field fields
 logger.info("User logged in", extra={"user_id": "U12345"})
 

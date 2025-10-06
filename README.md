@@ -14,7 +14,7 @@
 ## 🚀 Features
 
 - ✅ **Rich Console Output** with colors, backgrounds, and **emoji icons** per log level  
-- 🎨 **Syntax Highlighting** for code snippets (Python, SQL, JSON, etc.)  
+- 🎨 **Syntax Highlighting** for code snippets (Python, SQL, JSON, etc.) via `lexer='python'`  
 - 🎯 **Custom Log Levels**: `EMERGENCY`, `ALERT`, `NOTICE`, `FATAL` (Syslog-compliant)  
 - 📦 **Multi-Handler Support**:  
   - 🖥️ Console (Rich + ANSI fallback)  
@@ -26,11 +26,12 @@
   - 🗄️ PostgreSQL / MySQL / MariaDB / SQLite  
 
 - 🧪 **Jupyter/IPython Friendly** (no async warnings!)  
-- 🧩 **Customizable Format Templates** (`%(asctime)s`, `%(funcName)s`, etc.)  
-- 🔍 **Enhanced tracebacks** - Rich tracebacks with local variables
-- ⚙️ **Highly configurable** - Customizable colors, themes, and formats
+- 🧩 **Full LogRecord Template Support**: `%(asctime)s`, `%(funcName)s`, `%(threadName)s`, `%(icon)s`, etc.  
+- 🔁 **Smart Timestamp**: Repeated timestamps are hidden (like `RichHandler` original)
+- 🎨 **Custom Colors**: Set color per level (`info_color`, `error_color`, etc.)
+- ⚙️ **Highly Configurable**: `icon_first`, `level_in_message`, `show_background`, etc.  
 - 🚀 **Easy to use** - Simple setup with sensible defaults
-- ⚡ Zero external dependencies (except `rich` and optional brokers)
+- ⚡ **Zero required dependencies** (only `rich` for Rich mode; brokers optional)
 
 ---
 
@@ -122,12 +123,38 @@ logger = setup_logging(
 logger.notice("User logged in successfully 🔑")
 ```
 
+### Custom Format Template + Icon in Template
+
+```python
+FORMAT = "%(icon)s %(asctime)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+
+logger = setup_logging(
+    name="TEST",
+    format_template=FORMAT,
+    icon_first=True,           # Icon always at start (overrides template position)
+    omit_repeated_times=True   # Hide repeated timestamps
+)
+
+logger.info("Hello world")
+# Output:
+# 🔔 [10/06/25 15:30:00] INFO - Hello world (test.py:10)
+# 🔔                     INFO - Another message (test.py:11)
+```
+
+### Show Level in Message (`level_in_message=True`)
+
+```python
+logger = setup_logging(level_in_message=True)
+logger.info("This is a message")
+# Output: INFO - This is a message
+```
+
 ### Simple Logger (No Rich, for Jupyter)
 
 ```python
-from richcolorlog import getLoggerSimple
+from richcolorlog import setup_logging_custom
 
-logger = getLoggerSimple(
+logger = setup_logging_custom(
     name="notebook",
     show_icon=True,
     icon_first=False,
@@ -141,7 +168,7 @@ logger.info("Running analysis in Jupyter 📊")
 
 ## 🎯 Advanced Examples
 
-### 🔌 Send Logs to Kafka & File
+### 🔌 Send Logs to Kafka & File Logging
 
 ```python
 logger = setup_logging(
@@ -170,7 +197,20 @@ logger = setup_logging(
     db_password="secret"
 )
 
-logger.emergency("Database connection lost! 🆘")
+logger.emergency("Database connection lost!")
+```
+
+### 🎨 Custom Colors per Level
+
+```python
+logger = setup_logging(
+    info_color="#00FFAA",
+    error_color="bold red on #111111",
+    warning_color="yellow",
+    show_background=True
+)
+logger.info("Custom color!")
+logger.error("Custom background!")
 ```
 
 ### 🧠 Custom Log Levels
@@ -181,23 +221,30 @@ logger.fatal("Fatal error — shutting down 💀")  # Level 55
 logger.alert("Immediate action required! 🚨")   # Level 59
 ```
 
+### 🧠 Custom Log Levels (Correct Location!)
+
+```python
+# File: test.py
+logger = setup_logging(name="test")
+logger.emergency("System down!")  # Shows: test.py:5 (not logger.py!)
+```
+
 ---
 
 ## 🛠️ Configuration Options
 
 | Parameter | Description | Default |
-|---------|-------------|--------|
-| `name` | Logger name | `None` |
-| `level` | Log level (`DEBUG`, `INFO`, etc.) | `"DEBUG"` |
-| `show_background` | Enable colored backgrounds | `True` |
+|----------|------------|--------|
 | `show_icon` | Show emoji icons | `True` |
 | `icon_first` | Icon before timestamp | `True` |
-| `format_template` | Custom format string | `None` |
-| `lexer` | Default syntax highlighter | `None` |
-| `log_file` | Enable file logging | `False` |
-| `kafka`, `rabbitmq`, `zeromq`, `syslog`, `db` | Enable respective handlers | `False` |
+| `format_template` | Log format (supports `%(icon)s`) | `None` |
+| `level_in_message` | Prefix message with `"LEVEL - "` | `False` |
+| `omit_repeated_times` | Hide repeated timestamps | `True` |
+| `show_background` | Enable background colors | `True` |
+| `..._color` | Custom color per level (`info_color`, `error_color`, etc.) | Default |
+| All `RichHandler` args | `tracebacks_show_locals`, `keywords`, `highlighter`, etc. | Fully supported |
 
-> 💡 **All RichHandler options** (like `tracebacks_show_locals`, `keywords`, etc.) are also supported!
+> ✅ If `format_template` contains `%(icon)s`, the icon is **still controlled by `icon_first`** — no duplicates.
 
 ---
 
@@ -272,7 +319,10 @@ You can use **any standard `LogRecord` field** in your `format_template`:
 | Custom Levels (`NOTICE`, `ALERT`) | ❌ | ❌ | ✅ |
 | Syntax Highlighting | ❌ | ❌ | ✅ |
 | Multi-Output (File + Kafka + DB) | Manual | ❌ | ✅ |
+| Template + Icon | ❌ | Limited | ✅ |
+| Accurate File/Line | ✅ | ❌ | ✅ |
 | Jupyter Safe | ❌ | ⚠️ | ✅ |
+| Repeated Timestamps | ❌ | ✅ | ✅ 
 | Custom Format Templates | ✅ | Limited | ✅ + **icon support** |
 
 ---
@@ -280,9 +330,7 @@ You can use **any standard `LogRecord` field** in your `format_template`:
 ## 🙏 Acknowledgements
 
 - Built on top of [`rich`](https://github.com/Textualize/rich) by Will McGugan  
-- Inspired by `loguru`, `structlog`, and syslog standards  
 - Icons from [EmojiOne](https://emojione.com/)
-
 ---
 
 ## 📜 License

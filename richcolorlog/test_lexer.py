@@ -1,6 +1,6 @@
 import logging
 
-# coba import rich
+# Try to import Rich
 try:
     from rich.console import Console
     from rich.syntax import Syntax
@@ -11,7 +11,6 @@ try:
 except ImportError:
     RICH_AVAILABLE = False
 
-# coba import pygments
 try:
     from pygments import highlight
     from pygments.lexers import get_lexer_by_name
@@ -23,7 +22,6 @@ except ImportError:
 
 
 if RICH_AVAILABLE:
-    # 🎨 theme untuk rich
     custom_theme = Theme({
         "log.time": "cyan",
         "log.level.debug": "bold #FFAA00",
@@ -55,7 +53,7 @@ if RICH_AVAILABLE:
     logging.basicConfig(level=logging.DEBUG, handlers=[handler])
 
 else:
-    # fallback handler dengan pygments atau plain text
+    # Fallback handler with pygments or plain text
     class FallbackHandler(logging.StreamHandler):
         def emit(self, record):
             msg = self.format(record)
@@ -65,7 +63,7 @@ else:
                     lexer_obj = get_lexer_by_name(lexer)
                     msg = highlight(msg, lexer_obj, TerminalFormatter())
                 except Exception:
-                    pass  # kalau gagal, tetap plain text
+                    pass  # If it fails, keep plain text
             self.stream.write(msg + "\n")
             self.flush()
 

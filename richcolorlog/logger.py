@@ -12,6 +12,8 @@ import traceback
 import os
 import re
 import sys
+import platform
+import ctypes
 import inspect
 import shutil
 import socket
@@ -55,6 +57,290 @@ except ImportError:
     def rich_escape(text: str) -> str:
         return str(text)
 
+class SafeDict(dict):
+    """Dictionary that doesn't raise KeyError, returns None instead."""
+    
+    def __missing__(self, key):
+        return None
+
+class ColorSupport:
+    TRUECOLOR = "truecolor"
+    COLOR_256 = "256color"
+    BASIC = "basic"
+    NONE = "none"
+
+class Check:
+    """Auto-detect terminal color support across all major OS."""
+
+    def __new__(cls, force: str | None = None):
+        """Return detected color mode immediately (not an instance)."""
+        return cls.detect_color_support(force)
+
+    # --- Environment checks ---
+    @staticmethod
+    def _check_env_truecolor() -> bool:
+        colorterm = (os.getenv("COLORTERM") or "").lower()
+        if "truecolor" in colorterm or "24bit" in colorterm:
+            return True
+        if os.getenv("WT_SESSION"):  # Windows Terminal
+            return True
+        return False
+
+    # --- curses terminfo (Unix-like only) ---
+    @staticmethod
+    def _curses_colors() -> int:
+        try:
+            import curses
+            curses.setupterm()
+            n = curses.tigetnum("colors")
+            if isinstance(n, int):
+                return n
+        except Exception:
+            pass
+        return -1
+
+    # --- Windows ANSI Enable ---
+    @staticmethod
+    def enable_windows_ansi() -> bool:
+        if platform.system() != "Windows":
+            return False
+
+        try:
+            kernel32 = ctypes.windll.kernel32
+            handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+            if handle in (0, -1):
+                return False
+
+            mode = ctypes.c_uint()
+            if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+                return False
+
+            ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
+            new_mode = mode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING
+            if new_mode != mode.value:
+                if not kernel32.SetConsoleMode(handle, new_mode):
+                    return False
+            return True
+        except Exception:
+            return False
+
+    # --- Core detection logic ---
+    @classmethod
+    def detect_color_support(cls, force: str | None = None) -> str:
+        if force in (
+            ColorSupport.TRUECOLOR,
+            ColorSupport.COLOR_256,
+            ColorSupport.BASIC,
+            ColorSupport.NONE,
+        ):
+            return force
+
+        if not sys.stdout.isatty():
+            return ColorSupport.NONE
+
+        if cls._check_env_truecolor():
+            return ColorSupport.TRUECOLOR
+
+        term = (os.getenv("TERM") or "").lower()
+        if "256color" in term:
+            return ColorSupport.COLOR_256
+        if "color" in term:
+            return ColorSupport.BASIC
+
+        colors = cls._curses_colors()
+        if colors >= 16777216:
+            return ColorSupport.TRUECOLOR
+        if colors >= 256:
+            return ColorSupport.COLOR_256
+        if colors >= 8:
+            return ColorSupport.BASIC
+
+        if platform.system() == "Windows":
+            if cls.enable_windows_ansi():
+                if cls._check_env_truecolor() or sys.getwindowsversion().major >= 10:
+                    return ColorSupport.TRUECOLOR
+                return ColorSupport.BASIC
+            return ColorSupport.NONE
+
+        return ColorSupport.BASIC
+
+class Colors:
+    """Handler untuk color schemes dengan berbagai format output."""
+
+    def __init__(
+        self,
+        color_type='ansi',
+        show_background=False,
+
+        emergency_color: str = '',        
+        alert_color: str = '',        
+        critical_color: str = '',        
+        error_color: str = '',        
+        warning_color: str = '',        
+        fatal_color: str = '',        
+        notice_color: str = '',        
+        debug_color: str = '',        
+        info_color: str = '',
+        ):
+
+        self.color_type = color_type
+        self.show_background = show_background
+
+        self.emergency_color = emergency_color
+        self.alert_color = alert_color
+        self.critical_color = critical_color
+        self.error_color = error_color
+        self.warning_color = warning_color
+        self.fatal_color = fatal_color
+        self.notice_color = notice_color
+        self.debug_color = debug_color
+        self.info_color = info_color
+
+    def rich_color(self, show_background=False):
+        """Restore color scheme in rich library format."""
+        if show_background:
+            COLORS = {
+                'debug': self.debug_color or "#000000 on #FFAA00",
+                'info': self.info_color or "#000000 on #00FF00",
+                'warning': self.warning_color or "black on #FFFF00",
+                'error': self.error_color or "white on red",
+                'critical': self.critical_color or "bright_white on #0000FF",
+                'fatal': self.fatal_color or "blue on #FF557F",
+                'emergency': self.emergency_color or "bright_white on #AA00FF",
+                'alert': self.alert_color or "bright_white on #005500",
+                'notice': self.notice_color or "black on #00FFFF",
+                'reset': '',
+            }
+        else:
+            COLORS = {
+                'debug': self.debug_color or "#FFAA00",
+                'info': self.info_color or "#00FF00",
+                'warning': self.warning_color or "#FFFF00",
+                'error': self.error_color or "red",
+                'critical': self.critical_color or "#0000FF",
+                'fatal': self.fatal_color or "#FF557F",
+                'emergency': self.emergency_color or "#AA00FF",
+                'alert': self.alert_color or "#005500",
+                'notice': self.notice_color or "#00FFFF",
+                'reset': '',
+            }
+        return COLORS
+
+    def check(self):
+        """Detection and Return Color Scheme according to the Terminal Support."""
+        COLORS = {}
+        mode = Check()
+        
+        if mode == ColorSupport.TRUECOLOR:
+            if self.color_type == 'ansi':
+                if self.show_background:
+                    COLORS = SafeDict({
+                        'debug': self.debug_color or "\x1b[38;2;0;0;0;48;2;255;170;0m",        # #000000 on #FFAA00
+                        'info': self.info_color or "\x1b[38;2;0;0;0;48;2;0;255;0m",           # #000000 on #00FF00
+                        'warning': self.warning_color or "\x1b[38;2;0;0;0;48;2;255;255;0m",      # black on #FFFF00
+                        # 'error': "\x1b[38;2;255;255;255;48;2;255;0;0m",    # white on red (RGB 24-bit) (Bugs)
+                        'error': self.error_color or "\x1b[97;41m",                            # white on red
+                        'critical': self.critical_color or "\x1b[38;2;255;255;255;48;2;0;0;255m", # bright_white on #0000FF
+                        'fatal': self.fatal_color or "\x1b[38;2;0;0;255;48;2;255;85;127m",     # blue on #FF557F
+                        'emergency': self.warning_color or "\x1b[38;2;255;255;255;48;2;170;0;255m", # bright_white on #AA00FF
+                        'alert': self.alert_color or "\x1b[38;2;255;255;255;48;2;0;85;0m",     # bright_white on #005500
+                        'notice': self.notice_color or "\x1b[38;2;0;0;0;48;2;0;255;255m",       # black on #00FFFF
+                        'reset': "\x1b[0m"
+                    })
+                else:
+                    COLORS = SafeDict({
+                        'debug': self.debug_color or "\x1b[38;2;255;170;0m",        # #FFAA00
+                        'info': self.info_color or "\x1b[38;2;0;255;0m",           # #00FF00
+                        'warning': self.warning_color or "\x1b[38;2;255;255;0m",      # #FFFF00
+                        'error': self.error_color or "\x1b[38;2;255;0;0m",          # red
+                        'critical': self.critical_color or "\x1b[38;2;0;0;255m",       # #0000FF
+                        'fatal': self.fatal_color or "\x1b[38;2;255;85;127m",       # #FF557F
+                        'emergency': self.emergency_color or "\x1b[38;2;170;0;255m",    # #AA00FF
+                        'alert': self.alert_color or "\x1b[38;2;0;85;0m",           # #005500
+                        'notice': self.notice_color or "\x1b[38;2;0;255;255m",       # #00FFFF
+                        'reset': "\x1b[0m"
+                    })
+            elif self.color_type == 'rich':
+                COLORS = self.rich_color(self.show_background)
+                
+        elif mode == ColorSupport.COLOR_256:
+            if self.color_type == 'ansi':
+                if self.show_background:
+                    COLORS = SafeDict({
+                        'debug': self.debug_color or "\x1b[30;48;5;214m",      # black on orange
+                        'info': self.info_color or "\x1b[30;48;5;46m",        # black on bright green
+                        'warning': self.warning_color or "\x1b[30;48;5;226m",    # black on yellow
+                        'error': self.error_color or "\x1b[97;41m",            # white on red
+                        'critical': self.critical_color or "\x1b[97;44m",         # white on blue
+                        'fatal': self.fatal_color or "\x1b[21;48;5;204m",      # blue on pink
+                        'emergency': self.emergency_color or "\x1b[97;48;5;129m",  # white on purple
+                        'alert': self.alert_color or "\x1b[97;48;5;22m",       # white on dark green
+                        'notice': self.notice_color or "\x1b[30;48;5;51m",      # black on cyan
+                        'reset': "\x1b[0m"
+                    })
+                else:
+                    COLORS = SafeDict({
+                        'debug': self.debug_color or "\x1b[38;5;214m",      # orange
+                        'info': self.info_color or "\x1b[38;5;46m",        # bright green
+                        'warning': self.warning_color or "\x1b[38;5;226m",    # yellow
+                        'error': self.error_color or "\x1b[91m",            # red
+                        'critical': self.critical_color or "\x1b[38;5;21m",    # blue
+                        'fatal': self.fatal_color or "\x1b[38;5;204m",      # pink
+                        'emergency': self.emergency_color or "\x1b[38;5;129m",  # purple
+                        'alert': self.alert_color or "\x1b[38;5;22m",       # dark green
+                        'notice': self.notice_color or "\x1b[38;5;51m",      # cyan
+                        'reset': "\x1b[0m"
+                    })
+            elif self.color_type == 'rich':
+                COLORS = self.rich_color(self.show_background)
+                
+        elif mode == ColorSupport.BASIC:
+            if self.color_type == 'ansi':
+                if self.show_background:
+                    COLORS = SafeDict({
+                        'debug': self.debug_color or "\x1b[30;43m",      # black on yellow
+                        'info': self.info_color or "\x1b[30;42m",       # black on green
+                        'warning': self.warning_color or "\x1b[30;43m",    # black on yellow
+                        'error': self.error_color or "\x1b[97;41m",      # white on red
+                        'critical': self.critical_color or "\x1b[97;44m",   # white on blue
+                        'fatal': self.fatal_color or "\x1b[97;45m",      # white on magenta
+                        'emergency': self.emergency_color or "\x1b[97;45m",  # white on magenta
+                        'alert': self.alert_color or "\x1b[97;42m",      # white on green
+                        'notice': self.notice_color or "\x1b[30;46m",     # black on cyan
+                        'reset': "\x1b[0m"
+                    })
+                else:
+                    COLORS = SafeDict({
+                        'debug': self.debug_color or "\x1b[33m",      # yellow
+                        'info': self.info_color or "\x1b[32m",       # green
+                        'warning': self.warning_color or "\x1b[33m",    # yellow
+                        'error': self.error_color or "\x1b[31m",      # red
+                        'critical': self.critical_color or "\x1b[34m",   # blue
+                        'fatal': self.fatal_color or "\x1b[35m",      # magenta
+                        'emergency': self.emergency_color or "\x1b[35m",  # magenta
+                        'alert': self.alert_color or "\x1b[32m",      # green
+                        'notice': self.notice_color or "\x1b[36m",     # cyan
+                        'reset': "\x1b[0m"
+                    })
+            elif self.color_type == 'rich':
+                # For Basic Mode, keep using the rich_color format
+                COLORS = self.rich_color(self.show_background)
+                
+        elif mode == ColorSupport.NONE:
+            COLORS = SafeDict({
+                'debug': '',
+                'info': '',
+                'warning': '',
+                'error': '',
+                'critical': '',
+                'fatal': '',
+                'emergency': '',
+                'alert': '',
+                'notice': '',
+                'reset': ''
+            })
+        
+        return COLORS
 
 # Define custom log levels (matching syslog severity)
 EMERGENCY_LEVEL = logging.CRITICAL + 10  # 60 - System unusable
@@ -191,30 +477,22 @@ def performance_monitor(func):
             _performance.record(func.__name__, duration)
     return wrapper
 
-
-class SafeDict(dict):
-    """Dictionary that doesn't raise KeyError, returns None instead."""
-    
-    def __missing__(self, key):
-        return None
-
 # ======================================================================
-
-def _add_custom_level_method(level_name: str, level_value: int):
-    """Add a custom logging method to the Logger class."""
-    def log_method(self, message, *args, **kwargs):
-        if self.isEnabledFor(level_value):
-            self._log(level_value, message, args, **kwargs)
     
+def _add_custom_level_method(level_name: str, level_value: int):
+    def log_method(self, message, *args, **kwargs):
+        extra = kwargs.pop("extra", {})
+        if "lexer" in kwargs:
+            extra["lexer"] = kwargs.pop("lexer")
+        if self.isEnabledFor(level_value):
+            self._log(level_value, message, args, extra=extra, stacklevel=3, **kwargs)
     setattr(logging.Logger, level_name.lower(), log_method)
-
 
 # Add custom logging methods
 _add_custom_level_method("EMERGENCY", EMERGENCY_LEVEL)
 _add_custom_level_method("ALERT", ALERT_LEVEL)
 _add_custom_level_method("NOTICE", NOTICE_LEVEL)
 _add_custom_level_method("FATAL", FATAL_LEVEL)
-
 
 # ==================== Icon Support ====================
 
@@ -288,7 +566,7 @@ class IconFilter(logging.Filter):
                              This filter always sets record.icon.
         """
         super().__init__()
-        self.icon_first = icon_first  # Bisa diabaikan di sini, handler yang atur posisi
+        self.icon_first = icon_first  # Can be ignored here, handlers that set positions
     
     def filter(self, record):
         """Always set record.icon based on level."""
@@ -296,50 +574,76 @@ class IconFilter(logging.Filter):
         return True
 
 class CustomLogger(logging.Logger):
-    """Custom logger class for ANSI output that supports lexer parameter."""
-    
     def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, stacklevel=1, **kwargs):
         if extra is None:
             extra = {}
         if "lexer" in kwargs:
             extra["lexer"] = kwargs.pop("lexer")
         super()._log(level, msg, args, exc_info, extra, stack_info, stacklevel)
-    
+
     def debug(self, msg, *args, **kwargs):
         if self.isEnabledFor(logging.DEBUG):
-            self._log(logging.DEBUG, msg, args, **kwargs)
-    
+            self._log(logging.DEBUG, msg, args, stacklevel=3, **kwargs)
+
     def info(self, msg, *args, **kwargs):
         if self.isEnabledFor(logging.INFO):
-            self._log(logging.INFO, msg, args, **kwargs)
-    
+            self._log(logging.INFO, msg, args, stacklevel=3, **kwargs)
+
     def warning(self, msg, *args, **kwargs):
         if self.isEnabledFor(logging.WARNING):
-            self._log(logging.WARNING, msg, args, **kwargs)
-    
+            self._log(logging.WARNING, msg, args, stacklevel=3, **kwargs)
+
     def error(self, msg, *args, **kwargs):
         if self.isEnabledFor(logging.ERROR):
-            self._log(logging.ERROR, msg, args, **kwargs)
-    
+            self._log(logging.ERROR, msg, args, stacklevel=3, **kwargs)
+
     def critical(self, msg, *args, **kwargs):
         if self.isEnabledFor(logging.CRITICAL):
-            self._log(logging.CRITICAL, msg, args, **kwargs)
+            self._log(logging.CRITICAL, msg, args, stacklevel=3, **kwargs)
 
 class CustomFormatter(logging.Formatter):
     """Custom formatter with ANSI color codes for different log levels."""
     
-    COLORS = SafeDict({
-        'debug': "\x1b[38;2;255;170;0m",
-        'info': "\x1b[38;2;0;255;255m",
-        'warning': "\x1b[30;48;2;255;255;0m",
-        'error': "\x1b[97;41m",
-        'critical': "\x1b[37;44m",
-        'alert': "\x1b[97;48;2;0;85;0m",
-        'emergency': "\x1b[97;48;2;170;0;255m",
-        'notice': "\x1b[30;48;2;0;255;255m",
-        'fatal': "\x1b[97;48;2;85;0;0m",
-        'reset': "\x1b[0m"
-    })
+    # COLORS = SafeDict({
+    #     'debug': "\x1b[38;2;255;170;0m",
+    #     'info': "\x1b[38;2;0;255;255m",
+    #     'warning': "\x1b[30;48;2;255;255;0m",
+    #     'error': "\x1b[97;41m",
+    #     'critical': "\x1b[37;44m",
+    #     'alert': "\x1b[97;48;2;0;85;0m",
+    #     'emergency': "\x1b[97;48;2;170;0;255m",
+    #     'notice': "\x1b[30;48;2;0;255;255m",
+    #     'fatal': "\x1b[97;48;2;85;0;0m",
+    #     'reset': "\x1b[0m"
+    # })
+
+    # COLORS = SafeDict({
+    #     'debug': "\x1b[38;2;0;0;0;48;2;255;170;0m",        # #000000 on #FFAA00
+    #     'info': "\x1b[38;2;0;0;0;48;2;0;255;0m",           # #000000 on #00FF00
+    #     'warning': "\x1b[38;2;0;0;0;48;2;255;255;0m",      # black on #FFFF00
+    #     'error': "\x1b[38;2;255;255;255;48;2;255;0;0m",    # white on red
+    #     'critical': "\x1b[38;2;255;255;255;48;2;0;0;255m", # bright_white on #0000FF
+    #     'fatal': "\x1b[38;2;0;0;255;48;2;255;85;127m",     # blue on #FF557F
+    #     'emergency': "\x1b[38;2;255;255;255;48;2;170;0;255m", # bright_white on #AA00FF
+    #     'alert': "\x1b[38;2;0;255;0;48;2;170;85;0m",       # green on #AA5500
+    #     'notice': "\x1b[38;2;0;0;0;48;2;0;255;255m",       # black on #00FFFF
+    #     'reset': "\x1b[0m"
+    # })
+
+    # COLORS = SafeDict({
+    #     'debug': "\x1b[30;43m",      # black on yellow (≈ #000000 on #FFAA00)
+    #     'info': "\x1b[30;42m",       # black on green (≈ #000000 on #00FF00)
+    #     'warning': "\x1b[30;43m",    # black on yellow
+    #     'error': "\x1b[97;41m",      # bright white on red
+    #     'critical': "\x1b[97;44m",   # bright white on blue
+    #     'fatal': "\x1b[94;45m",      # blue on magenta-ish (≈ blue on #FF557F)
+    #     'emergency': "\x1b[97;45m",  # bright white on magenta (≈ #AA00FF)
+    #     'alert': "\x1b[92;43m",      # bright green on yellow-brown (≈ #AA5500)
+    #     'notice': "\x1b[30;46m",     # black on cyan (≈ #00FFFF)
+    #     'reset': "\x1b[0m"
+    # })
+
+    COLORS = Colors(color_type='ansi', show_background=True).check()
     
     FORMAT_TEMPLATE = "%(asctime)s - %(name)s - %(process)d - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
 
@@ -353,14 +657,28 @@ class CustomFormatter(logging.Formatter):
         show_pid: bool = True,
         show_level: bool = True,
         show_path: bool = True,
-        icon_first: bool = False,
+        show_icon: bool = True,
+        icon_first: bool = True,
         lexer: str = '',
-        use_colors: bool = True
+        use_colors: bool = True,
+        # custom colors
+        emergency_color: str = '',        
+        alert_color: str = '',        
+        critical_color: str = '',        
+        error_color: str = '',        
+        warning_color: str = '',        
+        fatal_color: str = '',        
+        notice_color: str = '',        
+        debug_color: str = '',        
+        info_color: str = '',        
+
     ):
         super().__init__()
         self.use_colors = use_colors and self._supports_color()
         self.icon_first = icon_first
+        # print(f"self.icon_first: {self.icon_first}")
         self.lexer = lexer
+        self.show_icon = show_icon
 
         self.default_formatter = logging.Formatter(self.FORMAT_TEMPLATE)
         
@@ -373,15 +691,49 @@ class CustomFormatter(logging.Formatter):
 
         if not show_background:
             self.COLORS = self.COLORS.copy()
-            self.COLORS.update({
-                'warning': "\x1b[38;2;255;255;0m",
-                'error': "\x1b[31m",
-                'critical': "\x1b[38;2;85;0;0m",
-                'alert': "\x1b[38;2;0;85;0m",
-                'emergency': "\x1b[38;2;170;0;255m",
-                'notice': "\x1b[38;2;0;255;255m",
-                'fatal': "\x1b[38;2;0;85;255m",
-            })
+
+            # self.COLORS = {
+            #     'debug': debug_color or "\x1b[38;2;255;170;0m",
+            #     'info': info_color or "\x1b[38;2;0;255;255m",
+            #     'warning': warning_color or "\x1b[30;48;2;255;255;0m",
+            #     'error': error_color or "\x1b[97;41m",
+            #     'critical': critical_color or "\x1b[37;44m",
+            #     'alert': alert_color or "\x1b[97;48;2;0;85;0m",
+            #     'emergency': emergency_color or "\x1b[97;48;2;170;0;255m",
+            #     'notice': notice_color or "\x1b[30;48;2;0;255;255m",
+            #     'fatal': fatal_color or "\x1b[97;48;2;85;0;0m",
+            #     'reset': "\x1b[0m"
+            # }
+
+            self.COLORS = Colors(
+                color_type='ansi',
+                show_background=False,
+                emergency_color=emergency_color,
+                alert_color=alert_color,
+                critical_color=critical_color,
+                error_color=error_color,
+                warning_color=warning_color,
+                fatal_color=fatal_color,
+                notice_color=notice_color,
+                debug_color=debug_color,
+                info_color=info_color,
+
+            ).check()
+        else:
+            self.COLORS = Colors(
+                color_type='ansi',
+                show_background=True,
+                emergency_color=emergency_color,
+                alert_color=alert_color,
+                critical_color=critical_color,
+                error_color=error_color,
+                warning_color=warning_color,
+                fatal_color=fatal_color,
+                notice_color=notice_color,
+                debug_color=debug_color,
+                info_color=info_color,
+
+            ).check()
 
         self._build_formatters()
         
@@ -389,6 +741,8 @@ class CustomFormatter(logging.Formatter):
         """Build formatters for each log level."""
         icon_prefix = self.check_icon_first()
         if self.use_colors:
+            # print(f"icon_prefix: {icon_prefix}")
+            # print(f"self.COLORS['debug']: {self.COLORS['debug']}")
             self.formatters = {
                 logging.DEBUG: logging.Formatter(icon_prefix + self.COLORS['debug'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
                 logging.INFO: logging.Formatter(icon_prefix + self.COLORS['info'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
@@ -439,7 +793,7 @@ class CustomFormatter(logging.Formatter):
         return ''
 
     @performance_monitor
-    def format(self, record: logging.LogRecord) -> str:
+    def format1(self, record: logging.LogRecord) -> str:
         """Format the log record."""
         # Ensure icon always exists
         if not hasattr(record, "icon"):
@@ -457,6 +811,28 @@ class CustomFormatter(logging.Formatter):
         except Exception as e:
             # Don't let logging crash
             msg = f"[FORMATTER ERROR] {record.getMessage()} - {str(e)}"
+
+        return msg
+
+    @performance_monitor
+    def format(self, record: logging.LogRecord) -> str:
+        # Ensure icon always exists
+        if not hasattr(record, "icon"):
+            record.icon = ""
+        
+        # Select formatter based on level
+        formatter = self.formatters.get(record.levelno)
+        if formatter is None:
+            formatter = self.default_formatter
+        
+        try:
+            msg = formatter.format(record)
+        except Exception as e:
+            msg = f"[FORMATTER ERROR] {record.getMessage()} - {str(e)}"
+            return msg
+
+        if not self.icon_first and self.show_icon and record.icon:
+            msg = msg.rstrip() + " " + record.icon
 
         return msg
 
@@ -1045,8 +1421,20 @@ class AnsiLogHandler(logging.StreamHandler):
         show_level=True,
         show_path=True,
         show_icon=True,
-        icon_first=False,
+        icon_first=True,
         level_in_message=False,
+        use_colors=True,
+        # custom colors
+        emergency_color: str = '',        
+        alert_color: str = '',        
+        critical_color: str = '',        
+        error_color: str = '',        
+        warning_color: str = '',        
+        fatal_color: str = '',        
+        notice_color: str = '',        
+        debug_color: str = '',        
+        info_color: str = '',        
+
         **kwargs
     ):
         super().__init__()
@@ -1065,8 +1453,21 @@ class AnsiLogHandler(logging.StreamHandler):
             show_pid,
             show_level,
             show_path,
+            show_icon,
             icon_first,
-            lexer
+            lexer,
+            use_colors,
+            # custom colors
+            emergency_color=emergency_color,
+            alert_color=alert_color,
+            critical_color=critical_color,
+            error_color=error_color,
+            warning_color=warning_color,
+            fatal_color=fatal_color,
+            notice_color=notice_color,
+            debug_color=debug_color,
+            info_color=info_color,
+
         ))
         
         if show_icon:
@@ -1077,10 +1478,10 @@ class AnsiLogHandler(logging.StreamHandler):
         """Emit a record with pygments highlighting + icon."""
         try:
             try:
-                # Dapatkan pesan asli
+                # Get the original message
                 original_msg = record.getMessage()
                 if self.level_in_message:
-                    record.msg = f"{record.levelname} - {original_msg}"  # Ubah sementara
+                    record.msg = f"{record.levelname} - {original_msg}"  # Change temporarily
                 msg = self.format(record)
                 
             finally:
@@ -1128,7 +1529,7 @@ class RichColorLogHandler2(RichHandler):
         theme="fruity",
         format_template=None,
         
-        # RESTORE semua RichHandler arguments:
+        # RESTORE all RichHandler arguments:
         level: Union[int, str] = 'DEBUG',
         console: Optional[object] = None,
         show_time: bool = True,
@@ -1226,10 +1627,10 @@ class RichColorLogHandler2(RichHandler):
             self.addFilter(icon_filter)
 
     def _parse_template(self, template):
-        """Parse format template untuk menentukan komponen dan order."""
+        """Parse Template format to determine components and orders."""
         self.template_components = []
         
-        # Map format string ke component name
+        # Map format string to component name
         component_map = {
             '%(asctime)s': 'time',
             '%(name)s': 'name',
@@ -1249,7 +1650,7 @@ class RichColorLogHandler2(RichHandler):
                 pos = template.find(pattern)
                 self.template_components.append((pos, component))
         
-        # Sort berdasarkan posisi
+        # Sort based on position
         self.template_components.sort(key=lambda x: x[0])
         self.template_components = [comp for pos, comp in self.template_components]
 
@@ -1297,16 +1698,16 @@ class RichColorLogHandler2(RichHandler):
             if isinstance(message, (Text, str)):
                 output.append(message)
             else:
-                # Syntax atau Rich renderable
+                # Syntax or Rich renderable
                 self.console.print(output, message)
                 return
 
-            # Path di akhir (compact, no excessive spacing)
+            # Path at last (compact, no excessive spacing)
             if self.show_path:
                 output.append(" ")
                 output.append(path_text)
             
-            # Print ke console
+            # Print to console
             self.console.print(output)
             
         except Exception:
@@ -1339,7 +1740,7 @@ class RichColorLogHandler2(RichHandler):
                     line_numbers=False,
                     word_wrap=True,
                 )
-                return syntax  # ✅ biarkan Syntax, nanti emit handle
+                return syntax
             except Exception:
                 pass
 
@@ -1348,20 +1749,22 @@ class RichColorLogHandler2(RichHandler):
 
         return Text(str(message), style=style)
 
-
 class RichColorLogHandler(RichHandler):
     """Custom RichHandler with table-based compact layout."""
 
+    COLORS = Colors(color_type='rich', show_background=True).check()
+    
     LEVEL_STYLES = {
-        logging.DEBUG: "bold #FFAA00",
-        logging.INFO: "bold #00FFFF",
-        logging.WARNING: "black on #FFFF00",
-        logging.ERROR: "white on red",
-        logging.CRITICAL: "bright_white on #550000",
-        FATAL_LEVEL: "bright_white on #0055FF",
-        EMERGENCY_LEVEL: "bright_white on #AA00FF",
-        ALERT_LEVEL: "bright_white on #005500",
-        NOTICE_LEVEL: "black on #00FFFF",
+        logging.DEBUG: COLORS['debug'],
+        logging.INFO: COLORS['info'],
+        logging.WARNING: COLORS['warning'],
+        logging.ERROR: COLORS['error'],
+        logging.CRITICAL: COLORS['critical'],
+        CRITICAL_LEVEL: COLORS['critical'],
+        FATAL_LEVEL: COLORS['fatal'],
+        EMERGENCY_LEVEL: COLORS['emergency'],
+        ALERT_LEVEL: COLORS['alert'],
+        NOTICE_LEVEL: COLORS['notice'],
     }
 
     def __init__(
@@ -1375,11 +1778,11 @@ class RichColorLogHandler(RichHandler):
         format_template=None,
         level_in_message: bool = False,
         
-        # RESTORE semua RichHandler arguments:
+        # RESTORE all RichHandler arguments:
         level: Union[int, str] = 'DEBUG',
         console: Optional[object] = None,
         show_time: bool = True,
-        omit_repeated_times: bool = False,
+        omit_repeated_times: bool = True,
         show_level: bool = True,
         show_path: bool = True,
         enable_link_path: bool = True,
@@ -1398,6 +1801,17 @@ class RichColorLogHandler(RichHandler):
         locals_max_string: int = 80,
         log_time_format: Union[str, Callable[[object], object]] = '[%x %X]',
         keywords: Optional[List[str]] = None,
+
+        # custom colors
+        emergency_color: str = '',        
+        alert_color: str = '',        
+        critical_color: str = '',        
+        error_color: str = '',        
+        warning_color: str = '',        
+        fatal_color: str = '',        
+        notice_color: str = '',        
+        debug_color: str = '',        
+        info_color: str = '',        
 
         **kwargs
     ):
@@ -1448,31 +1862,61 @@ class RichColorLogHandler(RichHandler):
         self.level_styles = dict(self.LEVEL_STYLES)
 
         if not show_background:
+            COLORS = Colors(
+                color_type='rich', 
+                show_background=True,
+                emergency_color=emergency_color,
+                alert_color=alert_color,
+                critical_color=critical_color,
+                error_color=error_color,
+                warning_color=warning_color,
+                fatal_color=fatal_color,
+                notice_color=notice_color,
+                debug_color=debug_color,
+                info_color=info_color,
+                ).check()
+    
             self.LEVEL_STYLES = {
-                logging.DEBUG: "bold #FFAA00",
-                logging.INFO: "bold #00FFFF",
-                logging.WARNING: "#FFFF00",              # ← NO BACKGROUND
-                logging.ERROR: "red",
-                logging.CRITICAL: "bold #550000",
-                CRITICAL_LEVEL: "bold #550000",
-                FATAL_LEVEL: "#0055FF",
-                EMERGENCY_LEVEL: "#AA00FF",
-                ALERT_LEVEL: "#005500",
-                NOTICE_LEVEL: "#00FFFF",
+                logging.DEBUG: COLORS['debug'],
+                logging.INFO: COLORS['info'],
+                logging.WARNING: COLORS['warning'],
+                logging.ERROR: COLORS['error'],
+                logging.CRITICAL: COLORS['critical'],
+                CRITICAL_LEVEL: COLORS['critical'],
+                FATAL_LEVEL: COLORS['fatal'],
+                EMERGENCY_LEVEL: COLORS['emergency'],
+                ALERT_LEVEL: COLORS['alert'],
+                NOTICE_LEVEL: COLORS['notice'],
             }
+
         else:
-            LEVEL_STYLES = {
-            logging.DEBUG: "bold #FFAA00",
-            logging.INFO: "bold #00FFFF",
-            logging.WARNING: "black on #FFFF00",
-            logging.ERROR: "white on red",
-            logging.CRITICAL: "bright_white on #550000",
-            CRITICAL_LEVEL: "bright_white on #550000",
-            FATAL_LEVEL: "bright_white on #0055FF",
-            EMERGENCY_LEVEL: "bright_white on #AA00FF",
-            ALERT_LEVEL: "bright_white on #005500",
-            NOTICE_LEVEL: "black on #00FFFF",
-        }
+            COLORS = Colors(
+                color_type='rich',
+                show_background=True,
+                emergency_color=emergency_color,
+                alert_color=alert_color,
+                critical_color=critical_color,
+                error_color=error_color,
+                warning_color=warning_color,
+                fatal_color=fatal_color,
+                notice_color=notice_color,
+                debug_color=debug_color,
+                info_color=info_color,
+                ).check()
+    
+            self.LEVEL_STYLES = {
+                logging.DEBUG: COLORS['debug'],
+                logging.INFO: COLORS['info'],
+                logging.WARNING: COLORS['warning'],
+                logging.ERROR: COLORS['error'],
+                logging.CRITICAL: COLORS['critical'],
+                CRITICAL_LEVEL: COLORS['critical'],
+                FATAL_LEVEL: COLORS['fatal'],
+                EMERGENCY_LEVEL: COLORS['emergency'],
+                ALERT_LEVEL: COLORS['alert'],
+                NOTICE_LEVEL: COLORS['notice'],
+            }
+
 
         if os.getenv('DEBUG', '0').lower() in ['1', 'true', 'True']:
             print(f"DEBUG INIT: format_template={format_template}")
@@ -1546,6 +1990,9 @@ class RichColorLogHandler(RichHandler):
             print(f"DEBUG: show_icon={self.show_icon}, icon_first={self.icon_first}")
             print(f"DEBUG: template_components={getattr(self, 'template_components', [])}")
 
+            print(f"DEBUG: filename={record.filename}, lineno={record.lineno}")
+            print(f"DEBUG: pathname={record.pathname}")
+
         try:
             lexer_name = getattr(record, "lexer", None) or self.lexer
             has_lexer = lexer_name is not None
@@ -1564,13 +2011,13 @@ class RichColorLogHandler(RichHandler):
                 else:
                     self._last_shown_time = log_time
 
-            # Simpan panjang waktu untuk padding nanti
+            # Save the length of time for padding later
             time_width = len(log_time)
 
             if should_show_time:
                 all_components['time'] = Text(log_time, style="log.time")
             else:
-                # Ganti dengan spasi sepanjang waktu asli
+                # Replace it with space all the time
                 all_components['time'] = Text(" " * time_width, style="log.time")
 
             all_components['name'] = Text(record.name, style="cyan")
@@ -1593,7 +2040,7 @@ class RichColorLogHandler(RichHandler):
 
             original_message = record.getMessage()
             if self.level_in_message and not has_lexer:
-                # Tambahkan "LEVEL - " di depan pesan
+                # Add "level -" in front of the message
                 enhanced_message = f"{record.levelname} - {original_message}"
             else:
                 enhanced_message = original_message
@@ -1661,16 +2108,16 @@ class RichColorLogHandler(RichHandler):
             if hasattr(self, 'template_components') and self.template_components:
                 components_order = self.template_components.copy()
                 
-                # Pastikan icon ditangani sesuai show_icon dan icon_first
+                # Make sure the icon is handled according to show_icon and icon_firsst
                 if self.show_icon:
-                    # Hapus icon jika sudah ada (untuk menghindari duplikat dari template)
+                    # Delete the icon if there is (to avoid duplicate from the template)
                     if 'icon' in components_order:
                         components_order.remove('icon')
-                    # Tambahkan sesuai posisi
+                    # Add according to position
                     if self.icon_first:
                         components_order.insert(0, 'icon')
                     else:
-                        # Coba sisipkan sebelum 'message', atau di akhir
+                        # Try to insert before 'message', or at the end
                         try:
                             msg_idx = components_order.index('message')
                             components_order.insert(msg_idx, 'icon')
@@ -1713,7 +2160,7 @@ class RichColorLogHandler(RichHandler):
             for i, comp in enumerate(components_order):
                 if comp in all_components:
                     text_obj = all_components[comp]
-                    # Tambahkan spasi setelah setiap kolom (kecuali message)
+                    # Add space after each column (except Message)
                     if comp != 'message':
                         text_obj.append(" ")
                     row.append(text_obj)
@@ -1863,7 +2310,7 @@ def setup_logging(
     format_template=None,
     level_in_message=False,
     
-    # RESTORE semua RichHandler arguments:
+    # RESTORE all RichHandler arguments:
     level: Union[int, str] = 'DEBUG',
     console: Optional[object] = None,
     show_time: bool = True,
@@ -1934,6 +2381,19 @@ def setup_logging(
     db_password='',
     db_level=logging.DEBUG,
     HANDLER: RichColorLogHandler = RichColorLogHandler,
+
+    emergency_color: str = '',        
+    alert_color: str = '',        
+    critical_color: str = '',        
+    error_color: str = '',        
+    warning_color: str = '',        
+    fatal_color: str = '',        
+    notice_color: str = '',        
+    debug_color: str = '',        
+    info_color: str = '',
+
+    use_colors: bool = True        
+
 ) -> logging.Logger:
     """
     Setup enhanced logging with Rich formatting and multiple output handlers.
@@ -1998,7 +2458,7 @@ def setup_logging(
         format_template = "%(asctime)s %(name)s %(levelname)s %(message)s (%(filename)s:%(lineno)d)"
 
     # ===== Console Handler =====
-    if RICH_AVAILABLE:
+    if RICH_AVAILABLE and HANDLER == RichColorLogHandler:
         rich_handler = HANDLER(
             lexer=lexer,
             show_background=show_background,
@@ -2032,6 +2492,16 @@ def setup_logging(
             locals_max_string=locals_max_string,
             log_time_format=log_time_format,
             keywords=keywords,
+            emergency_color=emergency_color,
+            alert_color=alert_color,
+            critical_color=critical_color,
+            error_color=error_color,
+            warning_color=warning_color,
+            fatal_color=fatal_color,
+            notice_color=notice_color,
+            debug_color=debug_color,
+            info_color=info_color,
+
         )
 
         rich_handler.setLevel(level)
@@ -2046,7 +2516,7 @@ def setup_logging(
             rich_handler.addFilter(icon_filter)
 
         logger.addHandler(rich_handler)
-    else:
+    elif HANDLER == AnsiLogHandler:
         console_handler = AnsiLogHandler(
             lexer=lexer,
             show_background=show_background,
@@ -2058,9 +2528,21 @@ def setup_logging(
             show_path=show_path,
             show_icon=show_icon,
             icon_first=icon_first,
-            level_in_message=level_in_messages
+            level_in_message=level_in_message,
+            use_colors=use_colors,
+            emergency_color=emergency_color,
+            alert_color=alert_color,
+            critical_color=critical_color,
+            error_color=error_color,
+            warning_color=warning_color,
+            fatal_color=fatal_color,
+            notice_color=notice_color,
+            debug_color=debug_color,
+            info_color=info_color,
         )
         logger.addHandler(console_handler)
+    else:
+        console_handler = logging.StreamHandler
     
     # ===== RabbitMQ Handler =====
     if rabbitmq:

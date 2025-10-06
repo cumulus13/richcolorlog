@@ -42,8 +42,8 @@ code = """
         print("Hello World")
     """
 
-logger.info(code, lexer='python')  # Akan di-highlight sebagai Python code
-logger.debug("SELECT * FROM users", lexer='sql')  # Akan di-highlight sebagai SQL
+logger.info(code, lexer='python')  # Will be highlighted as a python code
+logger.debug("SELECT * FROM users", lexer='sql')  # Will be highlighted as SQL
 
 # print("\nTest function (CustomFormatter), LEXER + Background Color.\n")
 
@@ -55,5 +55,5 @@ logger.debug("SELECT * FROM users", lexer='sql')  # Akan di-highlight sebagai SQ
 #         print("Hello World")
 #     """
 
-# logger.info(code, lexer='python')  # Akan di-highlight sebagai Python code
-# logger.debug("SELECT * FROM users", lexer='sql')  # Akan di-highlight sebagai SQL
+# logger.info(code, lexer='python')  # Will be highlighted as a python code
+# logger.debug("SELECT * FROM users", lexer='sql')  # Will be highlighted as SQL
