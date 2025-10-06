@@ -229,6 +229,24 @@ logger = setup_logging(name="test")
 logger.emergency("System down!")  # Shows: test.py:5 (not logger.py!)
 ```
 
+```
+import logging
+logger = logging.getLogger("INHERITANCE")
+from richcolorlog import RichColorLogHandler
+handler = RichColorLogHandler()
+logger.handlers.clear()
+logger.addHandler(handler)
+logger.propagate = False
+
+logger.emergency("RGBME v0.13.2 - 128x64 Matrix | 1x1 Chain | 12px per LED (REAL) | BrowserAdapter")
+logger.alert("RGBME v0.13.2 - 128x64 Matrix | 1x1 Chain | 12px per LED (REAL) | BrowserAdapter")
+logger.critical("RGBME v0.13.2 - 128x64 Matrix | 1x1 Chain | 12px per LED (REAL) | BrowserAdapter")
+logger.error("RGBME v0.13.2 - 128x64 Matrix | 1x1 Chain | 12px per LED (REAL) | BrowserAdapter")
+logger.warning("RGBME v0.13.2 - 128x64 Matrix | 1x1 Chain | 12px per LED (REAL) | BrowserAdapter")
+logger.notice("RGBME v0.13.2 - 128x64 Matrix | 1x1 Chain | 12px per LED (REAL) | BrowserAdapter")
+logger.debug("RGBME v0.13.2 - 128x64 Matrix | 1x1 Chain | 12px per LED (REAL) | BrowserAdapter")
+
+```
 ---
 
 ## 🛠️ Configuration Options
