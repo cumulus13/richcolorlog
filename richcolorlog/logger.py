@@ -2473,7 +2473,7 @@ def setup_logging(
             rich_handler.addFilter(icon_filter)
 
         logger.addHandler(rich_handler)
-    elif HANDLER == AnsiLogHandler:
+    else:
         console_handler = AnsiLogHandler(
             lexer=lexer,
             show_background=show_background,
@@ -2498,8 +2498,6 @@ def setup_logging(
             info_color=info_color,
         )
         logger.addHandler(console_handler)
-    else:
-        console_handler = logging.StreamHandler
     
     # ===== RabbitMQ Handler =====
     if rabbitmq:
