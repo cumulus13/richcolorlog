@@ -579,27 +579,23 @@ class CustomLogger(logging.Logger):
             extra = {}
         if "lexer" in kwargs:
             extra["lexer"] = kwargs.pop("lexer")
-        super()._log(level, msg, args, exc_info, extra, stack_info, stacklevel)
+        if not _check_logging_disabled():
+            super()._log(level, msg, args, exc_info, extra, stack_info, stacklevel)
 
     def debug(self, msg, *args, **kwargs):
-        if self.isEnabledFor(logging.DEBUG):
-            self._log(logging.DEBUG, msg, args, stacklevel=3, **kwargs)
+        self._log(logging.DEBUG, msg, args, stacklevel=3, **kwargs)
 
     def info(self, msg, *args, **kwargs):
-        if self.isEnabledFor(logging.INFO):
-            self._log(logging.INFO, msg, args, stacklevel=3, **kwargs)
+        self._log(logging.INFO, msg, args, stacklevel=3, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
-        if self.isEnabledFor(logging.WARNING):
-            self._log(logging.WARNING, msg, args, stacklevel=3, **kwargs)
+        self._log(logging.WARNING, msg, args, stacklevel=3, **kwargs)
 
     def error(self, msg, *args, **kwargs):
-        if self.isEnabledFor(logging.ERROR):
-            self._log(logging.ERROR, msg, args, stacklevel=3, **kwargs)
+        self._log(logging.ERROR, msg, args, stacklevel=3, **kwargs)
 
     def critical(self, msg, *args, **kwargs):
-        if self.isEnabledFor(logging.CRITICAL):
-            self._log(logging.CRITICAL, msg, args, stacklevel=3, **kwargs)
+        self._log(logging.CRITICAL, msg, args, stacklevel=3, **kwargs)
 
 class CustomFormatter(logging.Formatter):
     """Custom formatter with ANSI color codes for different log levels."""
@@ -2372,8 +2368,8 @@ def setup_logging(
         os.environ['NO_LOGGING'] = '1'
         logging.basicConfig(level=logging.CRITICAL)
 
-    if _check_logging_disabled():
-        return logging.getLogger(name)
+    #if _check_logging_disabled():
+        #return logging.getLogger(name)
 
     if exceptions:
         for i in exceptions:
