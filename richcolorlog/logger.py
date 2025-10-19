@@ -79,7 +79,7 @@ class Check:
     # --- Environment checks ---
     @staticmethod
     def _check_env_truecolor() -> bool:
-        colorterm = (os.getenv("COLORTERM") or "").lower()
+        colorterm = str(os.getenv("COLORTERM") or "").lower()
         if "truecolor" in colorterm or "24bit" in colorterm:
             return True
         if os.getenv("WT_SESSION"):  # Windows Terminal
@@ -141,7 +141,7 @@ class Check:
         if cls._check_env_truecolor():
             return ColorSupport.TRUECOLOR
 
-        term = (os.getenv("TERM") or "").lower()
+        term = str(os.getenv("TERM") or "").lower()
         if "256color" in term:
             return ColorSupport.COLOR_256
         if "color" in term:
@@ -758,7 +758,7 @@ class CustomFormatter(logging.Formatter):
 
     def _supports_color(self) -> bool:
         """Check if terminal supports color output."""
-        if os.getenv("FORCE_COLOR", "").lower() in ("1", "true"):
+        if str(os.getenv("FORCE_COLOR", "")).lower() in ("1", "true"):
             return True
         if os.getenv("NO_COLOR") is not None:
             return False
@@ -936,8 +936,8 @@ class RichColorLogFormatter(CustomRichFormatter):
 
 def _check_logging_disabled():
     """Check environment variables to see if logging should be disabled."""
-    NO_LOGGING = os.getenv('NO_LOGGING', '0').lower() in ['1', 'true', 'yes']
-    LOGGING_DISABLED = os.getenv('LOGGING', '1').lower() in ['0', 'false', 'no']
+    NO_LOGGING = str(os.getenv('NO_LOGGING', '0')).lower() in ['1', 'true', 'yes']
+    LOGGING_DISABLED = str(os.getenv('LOGGING', '1')).lower() in ['0', 'false', 'no']
 
     if NO_LOGGING or LOGGING_DISABLED:
         root_logger = logging.getLogger()
@@ -1594,7 +1594,7 @@ class RichColorLogHandler2(RichHandler):
             # print(f"DEBUG: Calling _parse_template with {self.format_template}")
             self._parse_template(self.format_template) 
         else:
-            if str(os.getenv('DEBUG', '0')).lower() in ['1', 'true', 'True']:
+            if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
                 print(f"DEBUG: NOT calling _parse_template because format_template is {self.format_template}")
 
         try:
@@ -1871,7 +1871,7 @@ class RichColorLogHandler(RichHandler):
         }
 
 
-        if str(os.getenv('DEBUG', '0')).lower() in ['1', 'true', 'True']:
+        if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
             print(f"DEBUG INIT: format_template={format_template}")
             print(f"DEBUG INIT: self.format_template={self.format_template}")
             print("DEBUG INIT: FORMAT TEMPLATE =", repr(self.format_template))
@@ -1879,7 +1879,7 @@ class RichColorLogHandler(RichHandler):
         if self.format_template:
             self._parse_template(self.format_template) 
         else:
-            if str(os.getenv('DEBUG', '0')).lower() in ['1', 'true', 'True']:
+            if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
                 print(f"DEBUG: NOT calling _parse_template because format_template is {self.format_template}")
 
         # Enable emoji
@@ -1932,14 +1932,14 @@ class RichColorLogHandler(RichHandler):
         matches.sort(key=lambda x: x[0])
         self.template_components = [name for pos, name in matches]
 
-        if str(os.getenv('DEBUG', '0')).lower() in ['1', 'true', 'True']:
+        if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
             print(f"DEBUG: Template: {template!r}")
             print(f"DEBUG: Parsed components: {self.template_components}")
             print("DEBUG: Searching for '%(asctime)s' in:", repr(template))
             print("DEBUG: Position:", template.find('%(asctime)s'))
 
     def emit(self, record):
-        if str(os.getenv('DEBUG', '0')).lower() in ['1', 'true', 'True']:
+        if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
             print(f"DEBUG: show_icon={self.show_icon}, icon_first={self.icon_first}")
             print(f"DEBUG: template_components={getattr(self, 'template_components', [])}")
 
@@ -2575,7 +2575,7 @@ def setup_logging(
     if name:
         logger.propagate = False
     
-    if str(os.getenv('DEBUG', '0')).lower() in ['1', 'true', 'yes']: print(f"logger.handlers: {logger.handlers}")
+    if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'yes']: print(f"logger.handlers: {logger.handlers}")
     return logger
 
 def get_def() -> str:
