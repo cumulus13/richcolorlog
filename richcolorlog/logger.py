@@ -72,7 +72,7 @@ class ColorSupport:
 class Check:
     """Auto-detect terminal color support across all major OS."""
 
-    def __new__(cls, force: str | None = None):
+    def __new__(cls, force = None):
         """Return detected color mode immediately (not an instance)."""
         return cls.detect_color_support(force)
 
@@ -126,7 +126,7 @@ class Check:
 
     # --- Core detection logic ---
     @classmethod
-    def detect_color_support(cls, force: str | None = None) -> str:
+    def detect_color_support(cls, force = None) -> str:
         if force in (
             ColorSupport.TRUECOLOR,
             ColorSupport.COLOR_256,
