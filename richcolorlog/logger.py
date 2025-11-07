@@ -579,6 +579,8 @@ class CustomLogger(logging.Logger):
             extra = {}
         if "lexer" in kwargs:
             extra["lexer"] = kwargs.pop("lexer")
+        if "type" in kwargs:
+            extra["type"] = kwargs.pop("type")
         if not _check_logging_disabled():
             super()._log(level, msg, args, exc_info, extra, stack_info, stacklevel)
 
@@ -1794,6 +1796,8 @@ class RichColorLogHandler(RichHandler):
         debug_color: str = '',        
         info_color: str = '',        
 
+        show_type: bool = False,
+
         **kwargs
     ):
         # --- keep your assignments ---
@@ -1831,8 +1835,10 @@ class RichColorLogHandler(RichHandler):
         self.log_time_format = log_time_format
         self.keywords = keywords
 
+        self.show_type = show_type
+
         # Remove custom params from kwargs
-        for key in ["lexer", "show_background", "render_emoji", "show_icon", "icon_first", "theme", "level_in_message"]:
+        for key in ["lexer", "show_background", "render_emoji", "show_icon", "icon_first", "theme", "level_in_message", "show_type"]:
             kwargs.pop(key, None)
 
         # Pass All Arguments to Parent Richhandler
@@ -1919,6 +1925,7 @@ class RichColorLogHandler(RichHandler):
             '%(thread)d': 'thread',
             '%(threadName)s': 'thread_name',
             '%(icon)s': 'icon',
+            '%(type)s': 'type',
         }
 
         # Find the position of each placeholder in the template
@@ -1950,6 +1957,7 @@ class RichColorLogHandler(RichHandler):
             lexer_name = getattr(record, "lexer", None) or self.lexer
             has_lexer = lexer_name is not None
             
+            s_type = getattr(record, "type", None)
             # === Build all_components ===
             all_components = {}
             
@@ -2009,6 +2017,11 @@ class RichColorLogHandler(RichHandler):
                 all_components['icon'] = Text(icon_str) if icon_str else Text("")
             else:
                 all_components['icon'] = Text("")
+
+            if self.show_type:
+                all_components['type'] = Text(" type: " + str(type(original_message).__name__))
+            else:
+                all_components['type'] = Text("")
 
             # === Custom Field from record.__dict__ ===
             standard_attrs = {
@@ -2086,10 +2099,14 @@ class RichColorLogHandler(RichHandler):
                 if self.show_level:
                     components_order.append('level')
                 components_order.append('message')
+                if self.show_type:
+                    components_order.append('type')
                 if self.show_path:
                     components_order.extend(['filename', 'lineno'])
                 if self.show_icon and not self.icon_first:
                     components_order.append('icon')
+                
+                # print(f"components_order: {components_order}")
 
             # === Build table ===
             # table = Table.grid(padding=(0, 1, 0, 0), pad_edge=False, expand=True)
@@ -2345,7 +2362,9 @@ def setup_logging(
     debug_color: str = '',        
     info_color: str = '',
 
-    use_colors: bool = True        
+    use_colors: bool = True,
+
+    show_type: bool = False,        
 
 ) -> logging.Logger:
     """
@@ -2454,6 +2473,7 @@ def setup_logging(
             notice_color=notice_color,
             debug_color=debug_color,
             info_color=info_color,
+            show_type=show_type
 
         )
 
