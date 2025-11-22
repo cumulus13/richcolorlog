@@ -1,0 +1,140 @@
+# RichColorLog Documentation - Directory Structure
+
+```
+richcolorlog/
+├── richcolorlog/
+│   ├── __init__.py
+│   ├── logger.py              # Main module (your code)
+│   └── py.typed               # Type hints marker
+│
+├── docs/
+│   ├── _static/
+│   │   ├── custom.css         # Dark theme styling
+│   │   ├── icon.png           # Your icon (add this)
+│   │   └── screenshot.png     # Your screenshot (add this)
+│   │
+│   ├── _templates/            # Optional Sphinx templates
+│   │
+│   ├── api/
+│   │   ├── logger.rst         # Logger API reference
+│   │   ├── handlers.rst       # Handlers API reference
+│   │   ├── formatters.rst     # Formatters API reference
+│   │   ├── colors.rst         # Colors API reference
+│   │   └── utilities.rst      # Utilities API reference
+│   │
+│   ├── handlers/
+│   │   ├── console.rst        # Console handler guide
+│   │   ├── file.rst           # File handler guide
+│   │   ├── rabbitmq.rst       # RabbitMQ handler guide
+│   │   ├── kafka.rst          # Kafka handler guide
+│   │   ├── zeromq.rst         # ZeroMQ handler guide
+│   │   ├── syslog.rst         # Syslog handler guide
+│   │   └── database.rst       # Database handler guide
+│   │
+│   ├── advanced/
+│   │   ├── formatters.rst     # Custom formatters guide
+│   │   ├── filters.rst        # Custom filters guide
+│   │   ├── syntax_highlighting.rst
+│   │   └── performance.rst    # Performance optimization
+│   │
+│   ├── conf.py                # Sphinx configuration
+│   ├── index.rst              # Main documentation page
+│   ├── installation.rst       # Installation guide
+│   ├── quickstart.rst         # Quick start guide
+│   ├── configuration.rst      # Configuration reference
+│   ├── custom_levels.rst      # Custom log levels
+│   ├── color_modes.rst        # Color modes explanation
+│   ├── changelog.rst          # Version changelog
+│   ├── contributing.rst       # Contribution guide
+│   ├── license.rst            # License information
+│   ├── requirements.txt       # Docs dependencies
+│   └── Makefile               # Build commands
+│
+├── tests/
+│   ├── __init__.py
+│   ├── test_logger.py
+│   ├── test_handlers.py
+│   └── test_formatters.py
+│
+├── .readthedocs.yaml          # ReadTheDocs configuration
+├── pyproject.toml             # Package configuration
+├── README.md                  # Project README
+├── LICENSE                    # MIT License
+└── CHANGELOG.md               # Changelog (optional, can use RST)
+```
+
+## Setup Instructions
+
+### 1. Create Directory Structure
+
+```bash
+mkdir -p docs/_static docs/_templates docs/api docs/handlers docs/advanced
+```
+
+### 2. Add Your Images
+
+Copy your images to the `docs/_static/` directory:
+- `icon.png` - Project icon (used as logo)
+- `screenshot.png` - Screenshot showing the logger output
+
+### 3. Install Documentation Dependencies
+
+```bash
+pip install -r docs/requirements.txt
+```
+
+### 4. Build Documentation Locally
+
+```bash
+cd docs
+make html
+```
+
+Open `docs/_build/html/index.html` in your browser.
+
+### 5. Setup ReadTheDocs
+
+1. Go to [readthedocs.org](https://readthedocs.org)
+2. Import your GitHub repository
+3. ReadTheDocs will automatically use `.readthedocs.yaml`
+4. Documentation will build on every push
+
+### 6. Configure GitHub Repository
+
+Make sure your repository has:
+- All documentation files committed
+- `.readthedocs.yaml` in the root
+- `docs/` directory with all RST files
+
+### 7. Badge URLs
+
+Add these badges to your README:
+
+```markdown
+[![Documentation Status](https://readthedocs.org/projects/richcolorlog/badge/?version=latest)](https://richcolorlog.readthedocs.io/en/latest/?badge=latest)
+```
+
+## Building Commands
+
+```bash
+# Build HTML
+make html
+
+# Build PDF (requires LaTeX)
+make latexpdf
+
+# Live reload during development
+make livehtml
+
+# Check broken links
+make linkcheck
+
+# Clean build
+make clean
+```
+
+## Notes
+
+- The dark theme CSS is automatically applied
+- Screenshots should be high quality, showing colorful output
+- Icon should be square (recommended: 200x200 or 256x256 pixels)

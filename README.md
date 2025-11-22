@@ -6,6 +6,8 @@
 [![Python Versions](https://img.shields.io/pypi/pyversions/richcolorlog.svg?logo=python)](https://pypi.org/project/richcolorlog/)
 [![License](https://img.shields.io/github/license/cumulus13/richcolorlog?color=green)](https://github.com/cumulus13/richcolorlog/blob/main/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/richcolorlog)](https://pepy.tech/project/richcolorlog)
+[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://richcolorlog.readthedocs.io/)
+
 
 [![Screenshot](https://raw.githubusercontent.com/cumulus13/richcolorlog/master/screenshot.png)](https://raw.githubusercontent.com/cumulus13/richcolorlog/master/screenshot.png)
 
@@ -58,6 +60,10 @@ pip install -e .
 ```
 
 ---
+
+## Documentations
+
+[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://richcolorlog.readthedocs.io/)
 
 ## 🧪 Quick Start
 

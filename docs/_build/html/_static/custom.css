@@ -1,0 +1,358 @@
+/* RichColorLog Documentation - Dark Theme Customization */
+
+/* ============================================
+   Dark Theme Variables
+   ============================================ */
+:root {
+    --rcl-bg-primary: #0d1117;
+    --rcl-bg-secondary: #161b22;
+    --rcl-bg-tertiary: #21262d;
+    --rcl-text-primary: #c9d1d9;
+    --rcl-text-secondary: #8b949e;
+    --rcl-text-muted: #6e7681;
+    --rcl-border: #30363d;
+    --rcl-accent: #58a6ff;
+    --rcl-accent-hover: #79b8ff;
+    --rcl-success: #3fb950;
+    --rcl-warning: #d29922;
+    --rcl-error: #f85149;
+    --rcl-info: #58a6ff;
+    --rcl-purple: #a371f7;
+    --rcl-pink: #db61a2;
+    --rcl-orange: #f0883e;
+}
+
+/* ============================================
+   Global Dark Styling
+   ============================================ */
+body {
+    background-color: var(--rcl-bg-primary) !important;
+    color: var(--rcl-text-primary) !important;
+}
+
+/* Navigation Sidebar */
+.wy-side-nav-search {
+    background-color: #1a1a2e !important;
+}
+
+.wy-side-nav-search input[type="text"] {
+    background-color: var(--rcl-bg-tertiary) !important;
+    border-color: var(--rcl-border) !important;
+    color: var(--rcl-text-primary) !important;
+}
+
+.wy-nav-side {
+    background-color: var(--rcl-bg-secondary) !important;
+}
+
+.wy-menu-vertical a {
+    color: var(--rcl-text-primary) !important;
+}
+
+.wy-menu-vertical a:hover {
+    background-color: var(--rcl-bg-tertiary) !important;
+    color: var(--rcl-accent) !important;
+}
+
+.wy-menu-vertical li.current > a {
+    background-color: var(--rcl-bg-tertiary) !important;
+    border-left: 3px solid var(--rcl-accent) !important;
+}
+
+.wy-menu-vertical li.toctree-l1.current > a {
+    background-color: var(--rcl-bg-tertiary) !important;
+}
+
+/* Main Content Area */
+.wy-nav-content {
+    background-color: var(--rcl-bg-primary) !important;
+}
+
+.wy-nav-content-wrap {
+    background-color: var(--rcl-bg-primary) !important;
+}
+
+.rst-content {
+    color: var(--rcl-text-primary) !important;
+}
+
+/* ============================================
+   Typography
+   ============================================ */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--rcl-text-primary) !important;
+}
+
+h1 {
+    border-bottom: 1px solid var(--rcl-border);
+    padding-bottom: 0.5rem;
+}
+
+a {
+    color: var(--rcl-accent) !important;
+}
+
+a:hover {
+    color: var(--rcl-accent-hover) !important;
+}
+
+/* ============================================
+   Code Blocks
+   ============================================ */
+code, pre {
+    background-color: var(--rcl-bg-secondary) !important;
+    color: var(--rcl-text-primary) !important;
+    border: 1px solid var(--rcl-border) !important;
+    border-radius: 6px !important;
+}
+
+.highlight {
+    background-color: var(--rcl-bg-secondary) !important;
+    border-radius: 6px;
+}
+
+.highlight pre {
+    background-color: transparent !important;
+    border: none !important;
+    padding: 1rem !important;
+}
+
+/* Syntax Highlighting Colors */
+.highlight .c { color: #8b949e; } /* Comment */
+.highlight .k { color: #ff7b72; } /* Keyword */
+.highlight .kn { color: #ff7b72; } /* Keyword.Namespace */
+.highlight .n { color: #c9d1d9; } /* Name */
+.highlight .o { color: #ff7b72; } /* Operator */
+.highlight .p { color: #c9d1d9; } /* Punctuation */
+.highlight .s { color: #a5d6ff; } /* String */
+.highlight .s1 { color: #a5d6ff; } /* String.Single */
+.highlight .s2 { color: #a5d6ff; } /* String.Double */
+.highlight .mi { color: #79c0ff; } /* Number.Integer */
+.highlight .mf { color: #79c0ff; } /* Number.Float */
+.highlight .nb { color: #ffa657; } /* Name.Builtin */
+.highlight .nf { color: #d2a8ff; } /* Name.Function */
+.highlight .nc { color: #ffa657; } /* Name.Class */
+.highlight .nn { color: #ffa657; } /* Name.Namespace */
+.highlight .nt { color: #7ee787; } /* Name.Tag */
+.highlight .na { color: #79c0ff; } /* Name.Attribute */
+.highlight .nv { color: #ffa657; } /* Name.Variable */
+.highlight .bp { color: #79c0ff; } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #d2a8ff; } /* Name.Function.Magic */
+
+/* Inline Code */
+code.literal {
+    background-color: var(--rcl-bg-tertiary) !important;
+    padding: 0.2em 0.4em !important;
+    font-size: 0.9em !important;
+    border-radius: 4px !important;
+    border: none !important;
+}
+
+/* ============================================
+   Tables
+   ============================================ */
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+table thead {
+    background-color: var(--rcl-bg-tertiary) !important;
+}
+
+table th {
+    color: var(--rcl-text-primary) !important;
+    border: 1px solid var(--rcl-border) !important;
+    padding: 0.75rem !important;
+    text-align: left;
+}
+
+table td {
+    color: var(--rcl-text-primary) !important;
+    border: 1px solid var(--rcl-border) !important;
+    padding: 0.75rem !important;
+    background-color: var(--rcl-bg-secondary) !important;
+}
+
+table tr:nth-child(even) td {
+    background-color: var(--rcl-bg-tertiary) !important;
+}
+
+/* ============================================
+   Admonitions (Notes, Warnings, etc.)
+   ============================================ */
+.admonition {
+    background-color: var(--rcl-bg-secondary) !important;
+    border: 1px solid var(--rcl-border) !important;
+    border-radius: 6px !important;
+    margin: 1rem 0 !important;
+}
+
+.admonition-title {
+    background-color: var(--rcl-bg-tertiary) !important;
+    color: var(--rcl-text-primary) !important;
+    padding: 0.5rem 1rem !important;
+    font-weight: bold !important;
+}
+
+.admonition > p {
+    padding: 1rem !important;
+    margin: 0 !important;
+}
+
+.admonition.note {
+    border-left: 4px solid var(--rcl-info) !important;
+}
+
+.admonition.note .admonition-title {
+    color: var(--rcl-info) !important;
+}
+
+.admonition.warning {
+    border-left: 4px solid var(--rcl-warning) !important;
+}
+
+.admonition.warning .admonition-title {
+    color: var(--rcl-warning) !important;
+}
+
+.admonition.danger, .admonition.error {
+    border-left: 4px solid var(--rcl-error) !important;
+}
+
+.admonition.danger .admonition-title,
+.admonition.error .admonition-title {
+    color: var(--rcl-error) !important;
+}
+
+.admonition.tip, .admonition.hint {
+    border-left: 4px solid var(--rcl-success) !important;
+}
+
+.admonition.tip .admonition-title,
+.admonition.hint .admonition-title {
+    color: var(--rcl-success) !important;
+}
+
+/* ============================================
+   API Documentation
+   ============================================ */
+.rst-content dl:not(.docutils) dt {
+    background-color: var(--rcl-bg-tertiary) !important;
+    border-top: 3px solid var(--rcl-accent) !important;
+    color: var(--rcl-text-primary) !important;
+    padding: 0.5rem 1rem !important;
+}
+
+.rst-content dl:not(.docutils) dd {
+    background-color: var(--rcl-bg-secondary) !important;
+    border-left: 3px solid var(--rcl-border) !important;
+    margin-left: 0 !important;
+    padding: 1rem !important;
+}
+
+.sig-name {
+    color: var(--rcl-purple) !important;
+}
+
+.sig-param {
+    color: var(--rcl-orange) !important;
+}
+
+/* ============================================
+   Footer
+   ============================================ */
+footer {
+    background-color: var(--rcl-bg-secondary) !important;
+    color: var(--rcl-text-secondary) !important;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+.btn {
+    background-color: var(--rcl-bg-tertiary) !important;
+    border: 1px solid var(--rcl-border) !important;
+    color: var(--rcl-text-primary) !important;
+}
+
+.btn:hover {
+    background-color: var(--rcl-accent) !important;
+    color: white !important;
+}
+
+/* ============================================
+   Breadcrumbs
+   ============================================ */
+.wy-breadcrumbs {
+    color: var(--rcl-text-secondary) !important;
+}
+
+.wy-breadcrumbs a {
+    color: var(--rcl-accent) !important;
+}
+
+/* ============================================
+   Search Results
+   ============================================ */
+.search-match {
+    background-color: rgba(88, 166, 255, 0.3) !important;
+    padding: 0.1em 0.2em !important;
+    border-radius: 2px !important;
+}
+
+/* ============================================
+   Logo and Header
+   ============================================ */
+.wy-side-nav-search .wy-dropdown > a img.logo,
+.wy-side-nav-search > a img.logo {
+    max-width: 80px;
+    border-radius: 8px;
+    background-color: white;
+    padding: 4px;
+}
+
+.wy-side-nav-search > a {
+    color: white !important;
+    font-size: 1.2rem;
+}
+
+/* ============================================
+   Version Badge
+   ============================================ */
+.rst-versions {
+    background-color: var(--rcl-bg-tertiary) !important;
+    border-top: 1px solid var(--rcl-border) !important;
+}
+
+.rst-versions .rst-current-version {
+    background-color: var(--rcl-bg-secondary) !important;
+    color: var(--rcl-text-primary) !important;
+}
+
+/* ============================================
+   Copy Button (sphinx-copybutton)
+   ============================================ */
+.copybtn {
+    background-color: var(--rcl-bg-tertiary) !important;
+    border: 1px solid var(--rcl-border) !important;
+    color: var(--rcl-text-secondary) !important;
+}
+
+.copybtn:hover {
+    background-color: var(--rcl-accent) !important;
+    color: white !important;
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+@media (max-width: 768px) {
+    .wy-nav-content {
+        padding: 1rem !important;
+    }
+    
+    code.literal {
+        word-break: break-word !important;
+    }
+}

@@ -1,0 +1,38 @@
+# Read the Docs configuration file for RichColorLog
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html
+
+version: 2
+
+# Set the OS, Python version and other tools
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.11"
+  jobs:
+    pre_build:
+      - echo "Building RichColorLog documentation"
+
+# Build documentation in the "docs/" directory with Sphinx
+sphinx:
+  configuration: docs/conf.py
+  builder: html
+  fail_on_warning: false
+
+# Build documentation formats
+formats:
+  - pdf
+  - epub
+
+# Python configuration
+python:
+  install:
+    # Install docs dependencies
+    - requirements: docs/requirements.txt
+    # Install the package itself
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
+
+# Optionally, declare the Python requirements required to build documentation
+# See https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
