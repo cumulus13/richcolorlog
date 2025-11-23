@@ -41,16 +41,28 @@ Specify lexer for individual messages:
 
    logger = setup_logging()
 
+   code = """def greeting(name):
+                 print(f"Hello {name} !")"""
+
    # Python code
-   logger.info("Code sample:", extra={'lexer': 'python'})
-   logger.debug("print('hello')", extra={'lexer': 'python'})
+   logger.info(code, extra={'lexer': 'python'})
+   logger.debug(code, extra={'lexer': 'python'})
+
+   logger.info(code, lexer='python')
+   logger.debug(code, extra={'lexer': 'python'})
+
+   code = """SELECT * FROM clients"""
 
    # SQL
-   logger.info("Query:", extra={'lexer': 'sql'})
+   logger.info(code, extra={'lexer': 'sql'})
    logger.debug("SELECT * FROM users", extra={'lexer': 'sql'})
+
+   logger.info(code, lexer= 'sql')
+   logger.debug("SELECT * FROM users", lexer='sql')
 
    # JSON
    logger.debug('{"key": "value"}', extra={'lexer': 'json'})
+   logger.debug('{"key": "value"}', lexer=json')
 
 Available Lexers
 ----------------
@@ -152,6 +164,8 @@ The ANSI handler uses Pygments TerminalFormatter:
 
    # Pygments terminal highlighting
    logger.debug("print('hello world')")
+   # Or
+   logger.debug("print('hello world')", lexer='python')
 
 Auto-Detection
 --------------
@@ -181,7 +195,7 @@ Create a helper for automatic lexer detection:
    # Usage
    data = '{"key": "value"}'
    lexer = detect_lexer(data)
-   logger.debug(data, extra={'lexer': lexer})
+   logger.debug(data, lexer=lexer)
 
 Logging Decorated Code
 ----------------------
