@@ -102,6 +102,6 @@ setup(
     project_urls={
         "Bug Reports": f"https://github.com/cumulus13/{NAME}/issues",
         "Source": f"https://github.com/cumulus13/{NAME}",
-        "Documentation": f"https://github.com/cumulus13/{NAME}#readme",
+        "Documentation": f"https://richcolorlog.readthedocs.io",
     },
 )
