@@ -78,6 +78,7 @@ Basic Usage
    logger.alert("Alert message")
    logger.emergency("Emergency message")
    logger.fatal("Fatal message")
+   logger.success("Success message")
 
 Contents
 --------

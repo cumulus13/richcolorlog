@@ -181,6 +181,7 @@ class Colors:
         notice_color: str = '',        
         debug_color: str = '',        
         info_color: str = '',
+        success_color: str = '',
         ):
 
         self.color_type = color_type
@@ -195,6 +196,7 @@ class Colors:
         self.notice_color = notice_color
         self.debug_color = debug_color
         self.info_color = info_color
+        self.success_color = info_color
 
     def rich_color(self, show_background=False):
         """Restore color scheme in rich library format."""
@@ -202,6 +204,7 @@ class Colors:
             COLORS = {
                 'debug': self.debug_color or "#000000 on #FFAA00",
                 'info': self.info_color or "#000000 on #00FF00",
+                'success': self.info_color or "#000000 on #00FF00",
                 'warning': self.warning_color or "black on #FFFF00",
                 'error': self.error_color or "white on red",
                 'critical': self.critical_color or "bright_white on #0000FF",
@@ -215,6 +218,7 @@ class Colors:
             COLORS = {
                 'debug': self.debug_color or "#FFAA00",
                 'info': self.info_color or "#00FF00",
+                'success': self.info_color or "#00FF00",
                 'warning': self.warning_color or "#FFFF00",
                 'error': self.error_color or "red",
                 'critical': self.critical_color or "#0000FF",
@@ -237,6 +241,7 @@ class Colors:
                     COLORS = SafeDict({
                         'debug': self.debug_color or "\x1b[38;2;0;0;0;48;2;255;170;0m",        # #000000 on #FFAA00
                         'info': self.info_color or "\x1b[38;2;0;0;0;48;2;0;255;0m",           # #000000 on #00FF00
+                        'success': self.success_color or "\x1b[38;2;0;0;0;48;2;0;255;0m",           # #000000 on #00FF00
                         'warning': self.warning_color or "\x1b[38;2;0;0;0;48;2;255;255;0m",      # black on #FFFF00
                         # 'error': "\x1b[38;2;255;255;255;48;2;255;0;0m",    # white on red (RGB 24-bit) (Bugs)
                         'error': self.error_color or "\x1b[97;41m",                            # white on red
@@ -251,6 +256,7 @@ class Colors:
                     COLORS = SafeDict({
                         'debug': self.debug_color or "\x1b[38;2;255;170;0m",        # #FFAA00
                         'info': self.info_color or "\x1b[38;2;0;255;0m",           # #00FF00
+                        'success': self.success_color or "\x1b[38;2;0;255;0m",           # #00FF00
                         'warning': self.warning_color or "\x1b[38;2;255;255;0m",      # #FFFF00
                         'error': self.error_color or "\x1b[38;2;255;0;0m",          # red
                         'critical': self.critical_color or "\x1b[38;2;0;0;255m",       # #0000FF
@@ -269,6 +275,7 @@ class Colors:
                     COLORS = SafeDict({
                         'debug': self.debug_color or "\x1b[30;48;5;214m",      # black on orange
                         'info': self.info_color or "\x1b[30;48;5;46m",        # black on bright green
+                        'success': self.success_color or "\x1b[30;48;5;46m",        # black on bright green
                         'warning': self.warning_color or "\x1b[30;48;5;226m",    # black on yellow
                         'error': self.error_color or "\x1b[97;41m",            # white on red
                         'critical': self.critical_color or "\x1b[97;44m",         # white on blue
@@ -282,6 +289,7 @@ class Colors:
                     COLORS = SafeDict({
                         'debug': self.debug_color or "\x1b[38;5;214m",      # orange
                         'info': self.info_color or "\x1b[38;5;46m",        # bright green
+                        'success': self.success_color or "\x1b[38;5;46m",        # bright green
                         'warning': self.warning_color or "\x1b[38;5;226m",    # yellow
                         'error': self.error_color or "\x1b[91m",            # red
                         'critical': self.critical_color or "\x1b[38;5;21m",    # blue
@@ -300,6 +308,7 @@ class Colors:
                     COLORS = SafeDict({
                         'debug': self.debug_color or "\x1b[30;43m",      # black on yellow
                         'info': self.info_color or "\x1b[30;42m",       # black on green
+                        'success': self.success_color or "\x1b[30;42m",       # black on green
                         'warning': self.warning_color or "\x1b[30;43m",    # black on yellow
                         'error': self.error_color or "\x1b[97;41m",      # white on red
                         'critical': self.critical_color or "\x1b[97;44m",   # white on blue
@@ -313,6 +322,7 @@ class Colors:
                     COLORS = SafeDict({
                         'debug': self.debug_color or "\x1b[33m",      # yellow
                         'info': self.info_color or "\x1b[32m",       # green
+                        'success': self.success_color or "\x1b[32m",       # green
                         'warning': self.warning_color or "\x1b[33m",    # yellow
                         'error': self.error_color or "\x1b[31m",      # red
                         'critical': self.critical_color or "\x1b[34m",   # blue
@@ -330,6 +340,7 @@ class Colors:
             COLORS = SafeDict({
                 'debug': '',
                 'info': '',
+                'success': '',
                 'warning': '',
                 'error': '',
                 'critical': '',
@@ -351,17 +362,20 @@ ERROR_LEVEL = logging.ERROR              # 40 - Error conditions
 WARNING_LEVEL = logging.WARNING          # 30 - Warning conditions
 NOTICE_LEVEL = logging.INFO + 5          # 25 - Normal but significant
 INFO_LEVEL = logging.INFO                # 20 - Informational messages
+SUCCESS_LEVEL = logging.INFO                # 20 - Informational messages
 DEBUG_LEVEL = logging.DEBUG              # 10 - Debug messages
 
 # Standard levels
 DEBUG = logging.DEBUG
 ERROR = logging.ERROR
 INFO = logging.INFO
+# SUCCESS = logging.INFO
 WARNING = logging.WARNING
 CRITICAL = logging.CRITICAL
-
+logging.SUCCESS = SUCCESS_LEVEL
 # Add custom level names
 logging.addLevelName(EMERGENCY_LEVEL, "EMERGENCY")
+logging.addLevelName(SUCCESS_LEVEL, "SUCCESS")
 logging.addLevelName(ALERT_LEVEL, "ALERT")
 logging.addLevelName(CRITICAL_LEVEL, "CRITICAL")
 logging.addLevelName(NOTICE_LEVEL, "NOTICE")
@@ -371,6 +385,7 @@ logging.addLevelName(FATAL_LEVEL, "FATAL")
 LOGGING_LEVELS_LIST = [
     DEBUG_LEVEL,
     INFO_LEVEL,
+    SUCCESS_LEVEL,
     NOTICE_LEVEL,
     WARNING_LEVEL,
     ERROR_LEVEL,
@@ -392,6 +407,7 @@ SYSLOG_SEVERITY_MAP = {
     WARNING_LEVEL: 4,    # Warning
     NOTICE_LEVEL: 5,     # Notice
     INFO_LEVEL: 6,       # Informational
+    SUCCESS_LEVEL: 6,    # Informational
     DEBUG_LEVEL: 7,      # Debug
 }
 
@@ -405,6 +421,7 @@ LEVEL_TO_TABLE = {
     WARNING_LEVEL: "log_warning",
     NOTICE_LEVEL: "log_notice",
     INFO_LEVEL: "log_info",
+    SUCCESS_LEVEL: "log_info",
     DEBUG_LEVEL: "log_debug",
 }
 
@@ -500,6 +517,7 @@ class Icon:
     """Icon mappings for different log levels."""
     debug     = "🐛"
     info      = "🔔"
+    success   = "✅"
     notice    = "📢"
     warning   = "⛔"
     error     = "❌"
@@ -511,6 +529,7 @@ class Icon:
     # Uppercase aliases
     DEBUG     = debug
     INFO      = info
+    SUCCESS   = success
     NOTICE    = notice
     WARNING   = warning
     ERROR     = error
@@ -522,6 +541,7 @@ class Icon:
     # Short aliases
     DEB  = debug
     INF  = info
+    SUC  = success
     NOT  = notice
     WARN = warning
     ERR  = error
@@ -533,6 +553,7 @@ class Icon:
     # Lowercase short aliases
     deb  = debug
     inf  = info
+    suc  = success
     noti = notice
     war  = warning
     warn = warning
@@ -548,6 +569,7 @@ class IconFilter(logging.Filter):
     LEVEL_ICON_MAP = {
         logging.DEBUG: Icon.debug,
         logging.INFO: Icon.info,
+        logging.SUCCESS: Icon.success,
         logging.WARNING: Icon.warning,
         logging.ERROR: Icon.error,
         logging.CRITICAL: Icon.critical,
@@ -588,6 +610,9 @@ class CustomLogger(logging.Logger):
         self._log(logging.DEBUG, msg, args, stacklevel=3, **kwargs)
 
     def info(self, msg, *args, **kwargs):
+        self._log(logging.INFO, msg, args, stacklevel=3, **kwargs)
+
+    def success(self, msg, *args, **kwargs):
         self._log(logging.INFO, msg, args, stacklevel=3, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
@@ -729,6 +754,7 @@ class CustomFormatter(logging.Formatter):
             self.formatters = {
                 logging.DEBUG: logging.Formatter(icon_prefix + self.COLORS['debug'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
                 logging.INFO: logging.Formatter(icon_prefix + self.COLORS['info'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
+                logging.SUCCESS: logging.Formatter(icon_prefix + self.COLORS['success'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
                 logging.WARNING: logging.Formatter(icon_prefix + self.COLORS['warning'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
                 logging.ERROR: logging.Formatter(icon_prefix + self.COLORS['error'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
                 logging.CRITICAL: logging.Formatter(icon_prefix + self.COLORS['critical'] + self.FORMAT_TEMPLATE + self.COLORS['reset']),
@@ -825,6 +851,7 @@ class CustomRichFormatter(logging.Formatter):
     LEVEL_STYLES = SafeDict({
         logging.DEBUG: "bold #FFAA00",
         logging.INFO: "bold #00FFFF",
+        logging.SUCCESS: "bold #00FFFF",
         logging.WARNING: "black on #FFFF00",
         logging.ERROR: "white on red",
         logging.CRITICAL: "bright_white on #550000",
@@ -1583,6 +1610,7 @@ class RichColorLogHandler2(RichHandler):
             self.LEVEL_STYLES = {
                 logging.DEBUG: "bold #FFAA00",
                 logging.INFO: "bold #00FFFF",
+                logging.SUCCESS: "bold #00FFFF",
                 logging.WARNING: "#FFFF00",          # ❌ No background
                 logging.ERROR: "red",                # ❌ No background
                 logging.CRITICAL: "bold #550000",    # ❌ No background
@@ -1740,6 +1768,7 @@ class RichColorLogHandler(RichHandler):
     LEVEL_STYLES = {
         logging.DEBUG: COLORS['debug'],
         logging.INFO: COLORS['info'],
+        logging.SUCCESS: COLORS['success'],
         logging.WARNING: COLORS['warning'],
         logging.ERROR: COLORS['error'],
         logging.CRITICAL: COLORS['critical'],
