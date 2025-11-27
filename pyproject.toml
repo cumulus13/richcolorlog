@@ -7,7 +7,7 @@ name = "richcolorlog"
 dynamic = ["version"]
 description = "A beautiful and feature-rich logging package using Rich library"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Hadi Cahyadi", email = "cumulus13@gmail.com"}
 ]
@@ -18,7 +18,6 @@ keywords = ["logging", "rich", "console", "terminal", "colors", "formatting"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.7",
