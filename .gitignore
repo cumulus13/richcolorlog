@@ -61,3 +61,6 @@ __pycache__/
 *.log
 # PT backup directory
 .pt/
+
+# Added entries (1 items)
+*.patch

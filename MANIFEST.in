@@ -15,3 +15,5 @@ include richcolorlog/screenshot.png
 exclude richcolorlog/logger.py.1
 exclude richcolorlog/logger1.py
 exclude richcolorlog/logger2.py
+# Added entries (1 items) - 2025-11-28 23:31:14
+*.patch

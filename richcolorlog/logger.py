@@ -24,6 +24,7 @@ from datetime import datetime
 import threading
 from functools import lru_cache, wraps
 
+# import pygments if available
 try:
     from pygments import highlight
     from pygments.lexers import get_lexer_by_name, TextLexer
@@ -32,11 +33,13 @@ try:
 except ImportError:
     PYGMENTS_AVAILABLE = False
 
+# import rich logging components if available
 try:
     from rich.logging import FormatTimeCallable
 except ImportError:
     FormatTimeCallable = Callable[[float], str]
 
+# import rich components if available
 try:
     import rich
     from rich.logging import RichHandler
@@ -513,9 +516,104 @@ _add_custom_level_method("FATAL", FATAL_LEVEL)
 
 # ==================== Icon Support ====================
 
+def print_traceback(exc_info, padding_left = 0, show_datetime = True, show_emoji = False, emoji = "❌ ", console = None):
+    try:
+        from rich.text import Text
+        if not console:
+            from rich.console import Console
+            console = Console()
+    except Exception:
+        # fallback plain
+        print("".join(traceback.format_exception(*exc_info)))
+        return
+    
+    exc_type, exc_value, tb_details = exc_info
+        
+    if padding_left == None:
+        padding_left = 0
+    terminal_width = shutil.get_terminal_size()[0]
+    icon = emoji + ' ' if show_emoji else ' '
+    timestamp = ''
+    # Timestamp
+    if show_datetime:
+        timestamp = datetime.now().strftime("[bold #FF00FF]%Y[/]-[bold #0055FF]%m[/]-[bold #FF55FF]%d[/] [bold #FFFF00]%H[/]:[bold #FF5500]%M[/]:[bold #AAAAFF]%S[/].[bold #00FF00]%f[/]")
+        icon = emoji + ' ' if show_emoji else ' '
+        console.print(f"{icon}{padding_left * ' '}[bold]{timestamp}[/bold] - ", end='')
+
+    # Format traceback parts with colors
+    type_text = Text(str(exc_type), style="white on red")
+    value_text = Text(str(exc_value), style="black on #FFFF00")
+    
+    if isinstance(tb_details, str):
+        tb_string = tb_details
+    else:
+        tb_string = "".join(traceback.format_tb(tb_details))
+    
+    tb_text = Text("\n".join([padding_left *' ' if padding_left else 4 *' ' +  i for i in tb_string.split("\n")]), style="#00FFFF")
+    
+    
+    console.print(Text(icon) + Text(padding_left *' ') + type_text if not show_datetime else type_text, end='')
+    console.print(" : ", end='')
+    #if not padding_left: padding_left = 4
+    console.print(value_text)
+    console.print(Text(padding_left *' ') + tb_text)
+    if not padding_left:
+        padding_left = 4
+        console.print(f"[bold]{timestamp}[/bold] - ", end='') if timestamp else None
+    console.print(type_text, ":", value_text)
+    # Separator line
+    if not padding_left:
+        padding_left = 4
+        console.print("-" * terminal_width)
+        
+# --- NEW: ANSI colored traceback printer (fallback when not using rich) ---
+def print_traceback_ansi(exc_info, padding_left: int = 0, show_datetime: bool = True, show_emoji: bool = False, emoji: str = "❌ ", show_background: bool = False):
+    """
+    Print traceback using ANSI colors from CustomFormatter.COLORS (or fallback).
+    Meant to be used by AnsiLogHandler when record.exc_info is present.
+    """
+    # print(f"show_background: {show_background}")
+    colors = Colors(color_type='ansi', show_background=show_background).check()
+
+    exc_type, exc_value, tb_details = exc_info
+
+    if padding_left is None:
+        padding_left = 0
+
+    reset = colors.get("reset", "")
+    type_color = colors.get("error", "") or colors.get("emergency", "")
+    value_color = colors.get("warning", "") or colors.get("error", "")
+    tb_color = colors.get("notice", "") or ""
+
+    # Timestamp
+    timestamp = ""
+    if show_datetime:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # ms precision
+
+    icon = (emoji + " ") if show_emoji else ""
+    prefix = f"{icon}"
+    sys.stdout.write(f"{prefix}{timestamp if timestamp else ''}")
+
+    # Header: exception type and value
+    sys.stdout.write(f"{type_color}{exc_type.__name__ if hasattr(exc_type, '__name__') else str(exc_type)}{reset} : {value_color}{str(exc_value)}{reset}\n")
+
+    # Traceback body
+    if isinstance(tb_details, str):
+        tb_lines = tb_details.splitlines()
+    else:
+        tb_lines = traceback.format_tb(tb_details)
+        # format_tb returns list of multi-line strings; split them
+        tb_lines = sum((t.splitlines() for t in tb_lines), [])
+
+    for line in tb_lines:
+        if line is None:
+            continue
+        for sub in str(line).splitlines():
+            sys.stdout.write(f"{tb_color}{' ' * max(4, padding_left)}{sub}{reset}\n")
+
 class Icon:
     """Icon mappings for different log levels."""
-    debug     = "🐛"
+    debug     = "🪲"
     info      = "🔔"
     success   = "✅"
     notice    = "📢"
@@ -601,6 +699,8 @@ class CustomLogger(logging.Logger):
             extra = {}
         if "lexer" in kwargs:
             extra["lexer"] = kwargs.pop("lexer")
+        if "tb" in kwargs:
+            extra["tb"] = kwargs.pop("tb")
         if "type" in kwargs:
             extra["type"] = kwargs.pop("type")
         if not _check_logging_disabled():
@@ -623,6 +723,14 @@ class CustomLogger(logging.Logger):
 
     def critical(self, msg, *args, **kwargs):
         self._log(logging.CRITICAL, msg, args, stacklevel=3, **kwargs)
+        
+    def exception(self, msg, *args, exc_info=True, **kwargs):
+        """Log an exception with traceback using rich formatting."""
+        if exc_info is True or str(kwargs.get("tb", None)).lower() in ["1", "true", "yes", "ok"]:
+            exc_info = sys.exc_info()
+        self._log(logging.ERROR, msg, args, exc_info=exc_info, stacklevel=3, **kwargs)
+        # Use rich traceback for better formatting
+        # _print_traceback_rich(exc_info)
 
 class CustomFormatter(logging.Formatter):
     """Custom formatter with ANSI color codes for different log levels."""
@@ -1423,7 +1531,7 @@ class AnsiLogHandler(logging.StreamHandler):
     def __init__(
         self,
         lexer=None,
-        show_background=True,
+        show_background=False,
         format_template=None,
         show_time=True,
         show_name=True,
@@ -1454,6 +1562,8 @@ class AnsiLogHandler(logging.StreamHandler):
         self.icon_first = icon_first
         self.format_template = format_template
         self.level_in_message=level_in_message
+        self.show_background = show_background
+        # print(f"self.show_background [0]: {self.show_background}")
         
         self.setFormatter(CustomFormatter(
             show_background,
@@ -1487,6 +1597,12 @@ class AnsiLogHandler(logging.StreamHandler):
     def emit(self, record):
         """Emit a record with pygments highlighting + icon."""
         try:
+            # Preserve exc_info and prevent Formatter from auto-appending traceback
+            exc = getattr(record, "exc_info", None)
+            if exc:
+                # temporarily remove exc_info so formatter won't append traceback text
+                record.exc_info = None
+                record.exc_text = None
             try:
                 # Get the original message
                 original_msg = record.getMessage()
@@ -1502,9 +1618,9 @@ class AnsiLogHandler(logging.StreamHandler):
             
             if lexer_name and PYGMENTS_AVAILABLE:
                 try:
-                    lexer_obj = get_lexer_by_name(lexer_name)
+                    lexer_obj = get_lexer_by_name(lexer_name)  # type: ignore
                     message_only = record.getMessage()
-                    highlighted = highlight(message_only, lexer_obj, TerminalFormatter()).rstrip()
+                    highlighted = highlight(message_only, lexer_obj, TerminalFormatter()).rstrip()  # type: ignore
                     # Replace message part in formatted string
                     msg = msg.replace(message_only, highlighted)
                 except Exception:
@@ -1514,6 +1630,21 @@ class AnsiLogHandler(logging.StreamHandler):
             self.flush()
         except Exception:
             self.handleError(record)
+            
+        # Print ANSI-colored traceback once (if there was exc_info)
+        if exc:
+            try:
+                # Use our ANSI traceback printer so exceptions are colored in ANSI mode
+                # print(f"self.show_background [1]: {self.show_background}")
+                print_traceback_ansi(exc, padding_left=4, show_datetime=False, show_emoji=True, emoji=Icon.err if hasattr(Icon, 'err') else "❌ ", show_background=self.show_background)
+            except Exception:
+                # final fallback: plain traceback
+                try:
+                    import traceback as _tb
+                    self.stream.write("".join(_tb.format_exception(*exc)) + "\n")
+                    self.flush()
+                except Exception:
+                    pass
 
 class RichColorLogHandler2(RichHandler):
     """Custom RichHandler with compact layout."""
@@ -1842,7 +1973,14 @@ class RichColorLogHandler(RichHandler):
         self._last_shown_time = None
 
         self.level = level
-        self.console = console
+
+        # ✅ FIX: Ensure console is properly initialized
+        if console is None:
+            from rich.console import Console
+            self.console = Console()
+        else:
+            self.console = console
+
         self.show_time = show_time
         self.omit_repeated_times = omit_repeated_times
         self.show_level = show_level
@@ -1850,7 +1988,13 @@ class RichColorLogHandler(RichHandler):
         self.enable_link_path = enable_link_path
         self.highlighter = highlighter
         self.markup = markup
+
+
         self.rich_tracebacks = rich_tracebacks
+        if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
+            print(f"rich_tracebacks      [00]: {rich_tracebacks}")
+            print(f"self.rich_tracebacks [00]: {self.rich_tracebacks}")
+        
         self.tracebacks_width = tracebacks_width
         self.tracebacks_code_width = tracebacks_code_width
         self.tracebacks_extra_lines = tracebacks_extra_lines
@@ -1871,7 +2015,12 @@ class RichColorLogHandler(RichHandler):
             kwargs.pop(key, None)
 
         # Pass All Arguments to Parent Richhandler
-        super().__init__(**kwargs)
+        # ✅ FIX: Pass console to parent if it expects it
+        try:
+            super().__init__(console=self.console, **kwargs)
+        except TypeError:
+            # Fallback if parent doesn't accept console parameter
+            super().__init__(**kwargs)
 
         self.markup = True
 
@@ -1930,6 +2079,109 @@ class RichColorLogHandler(RichHandler):
             icon_filter = IconFilter(icon_first=icon_first)
             self.addFilter(icon_filter)
 
+        self.rich_tracebacks = rich_tracebacks
+        if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
+            print(f"rich_tracebacks [0]: {rich_tracebacks}")
+            print(f"self.rich_tracebacks [0]: {self.rich_tracebacks}")
+
+    def _is_traceback_string(self, message: str) -> bool:
+        """
+        Detect if message contains a traceback string.
+        
+        Common patterns from Django/DRF:
+        - "Traceback (most recent call last):"
+        - Multiple lines with "File" and line numbers
+        - Exception class names at the end
+        """
+        if not isinstance(message, str) or len(message) < 50:
+            return False
+        
+        # Check for common traceback patterns
+        traceback_indicators = [
+            'Traceback (most recent call last):',
+            'Traceback (most recent call last)',
+            'File "',
+            ', line ',
+        ]
+        
+        # Must have at least 2 indicators and multiple lines
+        has_indicators = sum(1 for ind in traceback_indicators if ind in message)
+        has_multiple_lines = message.count('\n') >= 3
+        
+        return has_indicators >= 2 and has_multiple_lines
+
+    def _extract_exception_info(self, message: str) -> tuple:
+        """
+        Extract exception type and message from traceback string.
+        
+        Returns:
+            tuple: (exception_type, exception_message, traceback_lines)
+        """
+        lines = message.split('\n')
+        
+        # Find the last non-empty line (usually the exception)
+        exception_line = None
+        for line in reversed(lines):
+            if line.strip():
+                exception_line = line.strip()
+                break
+        
+        if not exception_line:
+            return None, None, lines
+        
+        # Try to parse exception: "ExceptionType: message"
+        if ':' in exception_line:
+            parts = exception_line.split(':', 1)
+            exc_type = parts[0].strip()
+            exc_msg = parts[1].strip() if len(parts) > 1 else ""
+        else:
+            exc_type = exception_line
+            exc_msg = ""
+        
+        return exc_type, exc_msg, lines
+
+    def _render_traceback_string(self, message: str):
+        """
+        Render Django/DRF traceback string with syntax highlighting.
+        
+        Args:
+            message: Traceback string from Django/DRF
+        """
+        try:
+            # Extract exception info
+            exc_type, exc_msg, traceback_lines = self._extract_exception_info(message)
+            
+            # Create syntax highlighted traceback
+            syntax = Syntax(
+                message,
+                "pytb",  # Python traceback lexer
+                theme=self.tracebacks_theme or "monokai",
+                line_numbers=False,
+                word_wrap=self.tracebacks_word_wrap,
+                code_width=self.tracebacks_width,
+            )
+            
+            # Print with panel for better visibility
+            if exc_type:
+                title = f"[bold red]{exc_type}[/bold red]"
+                if exc_msg:
+                    title += f": {exc_msg}"
+            else:
+                title = "[bold red]Exception[/bold red]"
+            
+            panel = Panel(
+                syntax,
+                title=title,
+                border_style="red",
+                expand=False,
+            )
+            
+            self.console.print(panel)
+            
+        except Exception as e:
+            # Fallback: just print the message as-is
+            self.console.print(Text(message, style="red"))
+
     def _parse_template(self, template):
         """Parse Template format with explicit mapping."""
         self.template_components = []
@@ -1974,26 +2226,73 @@ class RichColorLogHandler(RichHandler):
             print("DEBUG: Searching for '%(asctime)s' in:", repr(template))
             print("DEBUG: Position:", template.find('%(asctime)s'))
 
+    def _print_traceback_rich(self, exc_info, padding_left = 0, show_datetime = True, show_emoji = False, emoji = "❌ "):
+        exc_type, exc_value, tb_details = exc_info
+        
+        if padding_left == None:
+            padding_left = 0
+        terminal_width = shutil.get_terminal_size()[0]
+        icon = emoji + ' ' if show_emoji else ' '
+        timestamp = ''
+        # Timestamp
+        if show_datetime:
+            timestamp = datetime.now().strftime("[bold #FF00FF]%Y[/]-[bold #0055FF]%m[/]-[bold #FF55FF]%d[/] [bold #FFFF00]%H[/]:[bold #FF5500]%M[/]:[bold #AAAAFF]%S[/].[bold #00FF00]%f[/]")
+            icon = emoji + ' ' if show_emoji else ' '
+            self.console.print(f"{icon}{padding_left * ' '}[bold]{timestamp}[/bold] - ", end='')
+
+        # Format traceback parts with colors
+        type_text = Text(str(exc_type), style="white on red")
+        value_text = Text(str(exc_value), style="black on #FFFF00")
+        
+        if isinstance(tb_details, str):
+            tb_string = tb_details
+        else:
+            tb_string = "".join(traceback.format_tb(tb_details))
+        
+        tb_text = Text("\n".join([padding_left *' ' if padding_left else 4 *' ' +  i for i in tb_string.split("\n")]), style="#00FFFF")
+        
+        
+        self.console.print(Text(icon) + Text(padding_left *' ') + type_text if not show_datetime else type_text, end='')
+        self.console.print(" : ", end='')
+        #if not padding_left: padding_left = 4
+        self.console.print(value_text)
+        self.console.print(Text(padding_left *' ') + tb_text)
+        if not padding_left:
+            padding_left = 4
+            self.console.print(f"[bold]{timestamp}[/bold] - ", end='') if timestamp else None
+        self.console.print(type_text, ":", value_text)
+        # Separator line
+        if not padding_left:
+            padding_left = 4
+            self.console.print("-" * terminal_width)
+
     def emit(self, record):
+        """Emit log record with proper traceback handling."""
         if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
             print(f"DEBUG: show_icon={self.show_icon}, icon_first={self.icon_first}")
             print(f"DEBUG: template_components={getattr(self, 'template_components', [])}")
-
             print(f"DEBUG: filename={record.filename}, lineno={record.lineno}")
             print(f"DEBUG: pathname={record.pathname}")
+            print(f"DEBUG: exc_info={record.exc_info}")  # Added for debugging
 
         try:
             lexer_name = getattr(record, "lexer", None) or self.lexer
             has_lexer = lexer_name is not None
+        
+            original_message = record.getMessage()
+        
+            # ✅ NEW: Check if message contains Django/DRF traceback
+            is_traceback_msg = self._is_traceback_string(original_message)
             
             s_type = getattr(record, "type", None)
+            
             # === Build all_components ===
             all_components = {}
             
             # Standard fields
             dt = datetime.fromtimestamp(record.created)
-            log_time = self.log_time_format(dt) if callable(self.log_time_format) else dt.strftime(self.log_time_format)
-            # all_components['time'] = Text(log_time, style="log.time")
+            log_time: Optional[str] = self.log_time_format(dt) if callable(self.log_time_format) else dt.strftime(self.log_time_format)  # type: ignore
+
             should_show_time = True
             if self.omit_repeated_times:
                 if self._last_shown_time == log_time:
@@ -2002,12 +2301,11 @@ class RichColorLogHandler(RichHandler):
                     self._last_shown_time = log_time
 
             # Save the length of time for padding later
-            time_width = len(log_time)
+            time_width = len(log_time) if log_time else 0
 
             if should_show_time:
                 all_components['time'] = Text(log_time, style="log.time")
             else:
-                # Replace it with space all the time
                 all_components['time'] = Text(" " * time_width, style="log.time")
 
             all_components['name'] = Text(record.name, style="cyan")
@@ -2023,20 +2321,26 @@ class RichColorLogHandler(RichHandler):
             all_components['thread_name'] = Text(record.threadName, style="magenta")
             
             # Message
-            # if has_lexer:
-            #     all_components['message'] = Text("")
-            # else:
-            #     all_components['message'] = self.render_message(record, record.getMessage())
-
             original_message = record.getMessage()
             if self.level_in_message and not has_lexer:
-                # Add "level -" in front of the message
                 enhanced_message = f"{record.levelname} - {original_message}"
             else:
                 enhanced_message = original_message
+                # print(f"enhanced_message: {enhanced_message}")
 
-            if has_lexer:
-                all_components['message'] = Text("")
+            # ✅ NEW: Don't render full traceback in message if it will be rendered separately
+            if is_traceback_msg:
+                # Extract just the first line for the table
+                first_line = original_message.split('\n')[0]
+                if len(first_line) > 100:
+                    first_line = first_line[:97] + "..."
+                all_components['message'] = Text(first_line + " [dim](see traceback below)[/dim]", style="red")
+            elif has_lexer:
+                if record.exc_info:
+                    # If there is exc_info, avoid duplicating traceback in message
+                    all_components['message'] = Text(f"{record.getMessage().splitlines()[0]} (see traceback below)", style=self.LEVEL_STYLES.get(record.levelno, ""))
+                else:
+                    all_components['message'] = Text("")
             else:
                 all_components['message'] = self.render_message(record, enhanced_message)
             
@@ -2057,69 +2361,28 @@ class RichColorLogHandler(RichHandler):
                 'name', 'msg', 'args', 'levelname', 'levelno', 'pathname', 'filename',
                 'module', 'lineno', 'funcName', 'created', 'msecs', 'relativeCreated',
                 'thread', 'threadName', 'processName', 'process', 'getMessage',
-                'exc_info', 'exc_text', 'stack_info', 'lexer', 'icon'
+                'exc_info', 'exc_text', 'stack_info', 'lexer', 'icon', 'tb'
             }
             for key, value in record.__dict__.items():
                 if key not in standard_attrs and key not in all_components:
                     all_components[key] = Text(str(value), style="dim italic")
 
             # === Determine the sequence of components ===
-            # if hasattr(self, 'template_components') and self.template_components:
-            #     components_order = self.template_components.copy()
-                
-            #     if self.show_icon and self.icon_first:
-            #         if 'icon' in components_order:
-            #             components_order.remove('icon')
-            #         components_order.insert(0, 'icon')
-            #     # If the template does not contain 'icon', but show_icon = true → add automatically
-            #     if self.show_icon and 'icon' not in components_order:
-            #         if self.icon_first:
-            #             components_order.insert(0, 'icon')
-            #         else:
-            #             # Look for the message message, then insert the previous icon
-            #             try:
-            #                 msg_idx = components_order.index('message')
-            #                 components_order.insert(msg_idx, 'icon')
-            #             except ValueError:
-            #                 components_order.append('icon')  # fallback
-            # else:
-            #     # Default order (without template)
-            #     components_order = []
-            #     if self.show_icon and self.icon_first:
-            #         components_order.append('icon')
-            #     if self.show_time:
-            #         components_order.append('time')
-            #     if self.show_level:
-            #         components_order.append('level')
-            #     components_order.append('message')
-            #     # if self.show_path:
-            #     #     components_order.append('filename')
-            #     #     components_order.append('lineno')
-            #     if self.show_path:
-            #         components_order.extend(['filename', 'lineno'])
-            #     if self.show_icon and not self.icon_first:
-            #         components_order.append('icon')
-
             if hasattr(self, 'template_components') and self.template_components:
                 components_order = self.template_components.copy()
                 
-                # Make sure the icon is handled according to show_icon and icon_firsst
                 if self.show_icon:
-                    # Delete the icon if there is (to avoid duplicate from the template)
                     if 'icon' in components_order:
                         components_order.remove('icon')
-                    # Add according to position
                     if self.icon_first:
                         components_order.insert(0, 'icon')
                     else:
-                        # Try to insert before 'message', or at the end
                         try:
                             msg_idx = components_order.index('message')
                             components_order.insert(msg_idx, 'icon')
                         except ValueError:
                             components_order.append('icon')
             else:
-                # Default order (without template)
                 components_order = []
                 if self.show_icon and self.icon_first:
                     components_order.append('icon')
@@ -2134,11 +2397,8 @@ class RichColorLogHandler(RichHandler):
                     components_order.extend(['filename', 'lineno'])
                 if self.show_icon and not self.icon_first:
                     components_order.append('icon')
-                
-                # print(f"components_order: {components_order}")
 
             # === Build table ===
-            # table = Table.grid(padding=(0, 1, 0, 0), pad_edge=False, expand=True)
             table = Table.grid(padding=(0), pad_edge=False, expand=True)
             for comp in components_order:
                 if comp == 'message':
@@ -2148,18 +2408,10 @@ class RichColorLogHandler(RichHandler):
                 else:
                     table.add_column(justify="left", no_wrap=True)
 
-            # row = []
-            # for comp in components_order:
-            #     if comp in all_components:
-            #         row.append(all_components[comp])
-            #     else:
-            #         row.append(Text(f"<{comp}>", style="dim red"))
-
             row = []
             for i, comp in enumerate(components_order):
                 if comp in all_components:
                     text_obj = all_components[comp]
-                    # Add space after each column (except Message)
                     if comp != 'message':
                         text_obj.append(" ")
                     row.append(text_obj)
@@ -2169,8 +2421,17 @@ class RichColorLogHandler(RichHandler):
             table.add_row(*row)
             self.console.print(table)
 
-            # === Syntax highlighting If there is a lexer ===
-            if has_lexer:
+            if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
+                print(f"is_traceback_msg [1]: {is_traceback_msg}")
+                print(f"self.rich_tracebacks [1]: {self.rich_tracebacks}")
+            
+            # ✅ PRIORITY 1: Handle Django/DRF traceback string (most common in Django)
+            if is_traceback_msg and self.rich_tracebacks:
+                self._render_traceback_string(original_message)
+            
+            # ✅ PRIORITY 2: Handle syntax highlighting for lexer
+            # === Syntax highlighting if there is a lexer ===
+            elif has_lexer:
                 try:
                     syntax = Syntax(
                         str(record.getMessage()), 
@@ -2179,10 +2440,62 @@ class RichColorLogHandler(RichHandler):
                         line_numbers=False,
                         word_wrap=True,
                     )
-                    self.console.print(syntax)
+                    if not record.exc_info:
+                        self.console.print(syntax)
                 except Exception:
                     self.console.print(f"    {record.getMessage()}")
+            
+            # ✅ PRIORITY 3.1: Handle normal Python exception with exc_info
+            if record.exc_info:       
+                try:
+                    self._print_traceback_rich(record.exc_info, padding_left=0, show_datetime=True, show_emoji=True, emoji=Icon.err if hasattr(Icon, 'err') else "❌ ")
+                except Exception:
+                    print(traceback.format_exc())
+                    import traceback as tb
+                    exc_text = ''.join(tb.format_exception(*record.exc_info))
+                    self.console.print(Text(exc_text, style="red"))
+            # ✅ PRIORITY 3.2: Handle normal Python exception with exc_info
+            elif record.exc_info and self.rich_tracebacks:
+                try:
+                    from rich.traceback import Traceback
                     
+                    exc_type, exc_value, exc_tb = record.exc_info
+                    
+                    # Build traceback object with all configured options
+                    traceback_obj = Traceback.from_exception(
+                        exc_type, 
+                        exc_value, 
+                        exc_tb,
+                        width=self.tracebacks_width,
+                        extra_lines=self.tracebacks_extra_lines,
+                        theme=self.tracebacks_theme or 'fruity',
+                        word_wrap=self.tracebacks_word_wrap,
+                        show_locals=self.tracebacks_show_locals,
+                        suppress=self.tracebacks_suppress,
+                        max_frames=self.tracebacks_max_frames,
+                        locals_max_length=self.locals_max_length,
+                        locals_max_string=self.locals_max_string,
+                    )
+
+                    # Print traceback with proper styling
+                    self.console.print(traceback_obj)
+                    
+                except Exception as e:
+                    # Fallback: print standard traceback if Rich fails
+                    import traceback as tb
+                    self.console.print(
+                        f"[red]Error rendering rich traceback: {e}[/red]"
+                    )
+                    self.console.print(
+                        Text(tb.format_exc(), style="red")
+                    )
+            
+            # ✅ PRIORITY 4: Fallback for exc_info without rich_tracebacks
+            elif record.exc_info and not self.rich_tracebacks:
+                import traceback as tb
+                exc_text = ''.join(tb.format_exception(*record.exc_info))
+                self.console.print(Text(exc_text, style="red"))
+                
         except Exception:
             self.handleError(record)
 
@@ -2207,6 +2520,63 @@ class RichColorLogHandler(RichHandler):
         
         # If there is no Lexer, use Style Level (with background)
         return Text(str(message), style=style)
+
+class DjangoRichHandler(RichColorLogHandler):
+    """
+    Django-compatible wrapper that accepts parameters from LOGGING dict.
+    
+    Django's logging.config.dictConfig() only passes these standard parameters:
+    - level, formatter, filters
+    
+    Custom parameters must be handled in __init__
+    """
+    
+    def __init__(self, level='DEBUG', **kwargs):
+        """
+        Initialize handler with Django-compatible parameter handling.
+        
+        Django passes all handler config as kwargs.
+        """
+        print(f"LEVEL: {level}")
+        print(f"kwargs: {kwargs}")
+        
+        # Extract custom parameters with defaults
+        show_background = kwargs.pop('show_background', True)
+        show_icon = kwargs.pop('show_icon', True)
+        icon_first = kwargs.pop('icon_first', True)
+        rich_tracebacks = kwargs.pop('rich_tracebacks', True)  # ← Default TRUE
+        tracebacks_show_locals = kwargs.pop('tracebacks_show_locals', False)
+        tracebacks_width = kwargs.pop('tracebacks_width', 120)
+        tracebacks_theme = kwargs.pop('tracebacks_theme', 'monokai')
+        tracebacks_extra_lines = kwargs.pop('tracebacks_extra_lines', 3)
+        tracebacks_word_wrap = kwargs.pop('tracebacks_word_wrap', True)
+        show_time = kwargs.pop('show_time', True)
+        show_level = kwargs.pop('show_level', True)
+        show_path = kwargs.pop('show_path', True)
+        markup = kwargs.pop('markup', True)
+        omit_repeated_times = kwargs.pop('omit_repeated_times', True)
+        format_template = kwargs.pop('format_template', None)
+        
+        # Call parent with extracted parameters
+        super().__init__(
+            level=level,
+            show_background=show_background,
+            show_icon=show_icon,
+            icon_first=icon_first,
+            rich_tracebacks=rich_tracebacks,
+            tracebacks_show_locals=tracebacks_show_locals,
+            tracebacks_width=tracebacks_width,
+            tracebacks_theme=tracebacks_theme,
+            tracebacks_extra_lines=tracebacks_extra_lines,
+            tracebacks_word_wrap=tracebacks_word_wrap,
+            show_time=show_time,
+            show_level=show_level,
+            show_path=show_path,
+            markup=markup,
+            omit_repeated_times=omit_repeated_times,
+            format_template=format_template,
+            **kwargs  # Pass remaining kwargs to parent
+        )
 
 # ==================== Setup Functions ====================
 

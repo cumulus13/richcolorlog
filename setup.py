@@ -47,7 +47,7 @@ def get_version():
         else:
             print(f"ERROR: {e}")
 
-    return "0.0.0"
+    return "1.0.0"
 
 print(f"NAME   : {NAME}")
 print(f"VERSION: {get_version()}")
@@ -79,9 +79,9 @@ setup(
         "Topic :: Utilities",
     ],
     python_requires=">=3.7",
-    install_requires=[
-        "rich>=10.0.0",
-    ],
+    # install_requires=[
+    #     "rich>=10.0.0",
+    # ],
     extras_require={
         "dev": [
             "pytest>=6.0",
@@ -90,6 +90,15 @@ setup(
             "flake8",
             "mypy",
         ],
+        "color": [
+            "rich>=10.0.0",
+        ],
+        "rich": [
+            "rich>=10.0.0",
+        ],
+        "console": [
+            "rich>=10.0.0",
+        ]
     },
     entry_points = {
         "console_scripts":
@@ -97,7 +106,7 @@ setup(
                 "richcolorlog = richcolorlog.__main__:main",
             ]
     },
-    keywords="logging rich console terminal colors formatting",
+    keywords="logging rich console terminal colors formatting ANSI",
     project_urls={
         "Bug Reports": f"https://github.com/cumulus13/{NAME}/issues",
         "Source": f"https://github.com/cumulus13/{NAME}",
