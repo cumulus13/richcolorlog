@@ -70,7 +70,10 @@ from .logger import (
     test,
     test_brokers,
     test_lexer,
-    run_test
+    run_test,
+    print_exception,
+    print_traceback,
+    print_traceback_ansi
 )
 
 __all__ = [
@@ -109,5 +112,8 @@ __all__ = [
     "test",
     "test_brokers",
     "test_lexer",
-    "run_test"
+    "run_test",
+    "print_exception",
+    "print_traceback",
+    "print_traceback_ansi"
 ]

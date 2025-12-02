@@ -185,6 +185,8 @@ class Colors:
         debug_color: str = '',        
         info_color: str = '',
         success_color: str = '',
+        primary_color: str = '',
+        danger_color: str = '',
         ):
 
         self.color_type = color_type
@@ -199,7 +201,9 @@ class Colors:
         self.notice_color = notice_color
         self.debug_color = debug_color
         self.info_color = info_color
-        self.success_color = info_color
+        self.success_color = success_color
+        self.primary_color = primary_color
+        self.danger_color = danger_color
 
     def rich_color(self, show_background=False):
         """Restore color scheme in rich library format."""
@@ -215,13 +219,15 @@ class Colors:
                 'emergency': self.emergency_color or "bright_white on #AA00FF",
                 'alert': self.alert_color or "bright_white on #005500",
                 'notice': self.notice_color or "black on #00FFFF",
+                'primary': self.primary_color or "white on #000000",
+                'danger': self.danger_color or "black on #FF00FF",
                 'reset': '',
             }
         else:
             COLORS = {
                 'debug': self.debug_color or "#FFAA00",
                 'info': self.info_color or "#00FF00",
-                'success': self.info_color or "#00FF00",
+                'success': self.success_color or "#00FF00",
                 'warning': self.warning_color or "#FFFF00",
                 'error': self.error_color or "red",
                 'critical': self.critical_color or "#0000FF",
@@ -229,6 +235,8 @@ class Colors:
                 'emergency': self.emergency_color or "#AA00FF",
                 'alert': self.alert_color or "#005500",
                 'notice': self.notice_color or "#00FFFF",
+                'primary': self.primary_color or "#000000",
+                'danger': self.danger_color or "#FF00FF",
                 'reset': '',
             }
         return COLORS
@@ -253,6 +261,8 @@ class Colors:
                         'emergency': self.warning_color or "\x1b[38;2;255;255;255;48;2;170;0;255m", # bright_white on #AA00FF
                         'alert': self.alert_color or "\x1b[38;2;255;255;255;48;2;0;85;0m",     # bright_white on #005500
                         'notice': self.notice_color or "\x1b[38;2;0;0;0;48;2;0;255;255m",       # black on #00FFFF
+                        'primary': self.primary_color or "\x1b[38;2;255;255;255;48;2;0;0;0m",  # bright_white on #000000
+                        'danger': self.danger_color or "\x1b[38;2;255;255;255;48;2;255;0;255m", # bright_white on #FF00FF
                         'reset': "\x1b[0m"
                     })
                 else:
@@ -267,6 +277,8 @@ class Colors:
                         'emergency': self.emergency_color or "\x1b[38;2;170;0;255m",    # #AA00FF
                         'alert': self.alert_color or "\x1b[38;2;0;85;0m",           # #005500
                         'notice': self.notice_color or "\x1b[38;2;0;255;255m",       # #00FFFF
+                        'primary': self.primary_color or "\x1b[38;2;0;0;0m",        # #000000
+                        'danger': self.danger_color or "\x1b[38;2;255;0;255m",      # #FF00FF
                         'reset': "\x1b[0m"
                     })
             elif self.color_type == 'rich':
@@ -286,6 +298,8 @@ class Colors:
                         'emergency': self.emergency_color or "\x1b[97;48;5;129m",  # white on purple
                         'alert': self.alert_color or "\x1b[97;48;5;22m",       # white on dark green
                         'notice': self.notice_color or "\x1b[30;48;5;51m",      # black on cyan
+                        'primary': self.primary_color or "\x1b[30;48;5;0m",    # black on black
+                        'danger': self.danger_color or "\x1b[30;48;5;196m",     # black on red
                         'reset': "\x1b[0m"
                     })
                 else:
@@ -300,6 +314,8 @@ class Colors:
                         'emergency': self.emergency_color or "\x1b[38;5;129m",  # purple
                         'alert': self.alert_color or "\x1b[38;5;22m",       # dark green
                         'notice': self.notice_color or "\x1b[38;5;51m",      # cyan
+                        'primary': self.primary_color or "\x1b[38;5;0m",    # black
+                        'danger': self.danger_color or "\x1b[91m",            # red
                         'reset': "\x1b[0m"
                     })
             elif self.color_type == 'rich':
@@ -319,6 +335,8 @@ class Colors:
                         'emergency': self.emergency_color or "\x1b[97;45m",  # white on magenta
                         'alert': self.alert_color or "\x1b[97;42m",      # white on green
                         'notice': self.notice_color or "\x1b[30;46m",     # black on cyan
+                        'primary': self.primary_color or "\x1b[30;48;5;0m",    # black on black
+                        'danger': self.danger_color or "\x1b[30;48;5;196m",     # black on red
                         'reset': "\x1b[0m"
                     })
                 else:
@@ -333,6 +351,8 @@ class Colors:
                         'emergency': self.emergency_color or "\x1b[35m",  # magenta
                         'alert': self.alert_color or "\x1b[32m",      # green
                         'notice': self.notice_color or "\x1b[36m",     # cyan
+                        'primary': self.primary_color or "\x1b[30m",    # black 
+                        'danger': self.danger_color or "\x1b[31m",
                         'reset': "\x1b[0m"
                     })
             elif self.color_type == 'rich':
@@ -351,6 +371,8 @@ class Colors:
                 'emergency': '',
                 'alert': '',
                 'notice': '',
+                'primary': '',
+                'danger': '',
                 'reset': ''
             })
         
@@ -362,23 +384,29 @@ FATAL_LEVEL = 55
 ALERT_LEVEL = logging.CRITICAL + 9       # 59 - Action must be taken immediately
 CRITICAL_LEVEL = logging.CRITICAL + 8    # 58 - Critical conditions
 ERROR_LEVEL = logging.ERROR              # 40 - Error conditions
+DANGER_LEVEL = logging.ERROR + 1         # 41 - Danger conditions
 WARNING_LEVEL = logging.WARNING          # 30 - Warning conditions
 NOTICE_LEVEL = logging.INFO + 5          # 25 - Normal but significant
+SUCCESS_LEVEL = logging.INFO + 1         # 21 - Success messages
+PRIMARY_LEVEL = logging.INFO + 2         # 22 - Primary messages
 INFO_LEVEL = logging.INFO                # 20 - Informational messages
-SUCCESS_LEVEL = logging.INFO                # 20 - Informational messages
 DEBUG_LEVEL = logging.DEBUG              # 10 - Debug messages
 
 # Standard levels
 DEBUG = logging.DEBUG
 ERROR = logging.ERROR
+logging.SUCCESS = SUCCESS_LEVEL
+logging.PRIMARY = PRIMARY_LEVEL
+logging.DANGER = DANGER_LEVEL
 INFO = logging.INFO
 # SUCCESS = logging.INFO
 WARNING = logging.WARNING
 CRITICAL = logging.CRITICAL
-logging.SUCCESS = SUCCESS_LEVEL
 # Add custom level names
 logging.addLevelName(EMERGENCY_LEVEL, "EMERGENCY")
 logging.addLevelName(SUCCESS_LEVEL, "SUCCESS")
+logging.addLevelName(PRIMARY_LEVEL, "PRIMARY")
+logging.addLevelName(DANGER_LEVEL, "DANGER")
 logging.addLevelName(ALERT_LEVEL, "ALERT")
 logging.addLevelName(CRITICAL_LEVEL, "CRITICAL")
 logging.addLevelName(NOTICE_LEVEL, "NOTICE")
@@ -387,8 +415,8 @@ logging.addLevelName(FATAL_LEVEL, "FATAL")
 # All logging levels for iteration
 LOGGING_LEVELS_LIST = [
     DEBUG_LEVEL,
-    INFO_LEVEL,
     SUCCESS_LEVEL,
+    INFO_LEVEL,
     NOTICE_LEVEL,
     WARNING_LEVEL,
     ERROR_LEVEL,
@@ -397,6 +425,8 @@ LOGGING_LEVELS_LIST = [
     FATAL_LEVEL,
     ALERT_LEVEL,
     EMERGENCY_LEVEL,
+    DANGER_LEVEL,
+    PRIMARY_LEVEL
 ]
 
 # Syslog severity mapping (RFC 5424)
@@ -412,6 +442,8 @@ SYSLOG_SEVERITY_MAP = {
     INFO_LEVEL: 6,       # Informational
     SUCCESS_LEVEL: 6,    # Informational
     DEBUG_LEVEL: 7,      # Debug
+    PRIMARY_LEVEL: 8,    # Primary
+    DANGER_LEVEL: 9,     # Danger
 }
 
 # Level to table name mapping for database
@@ -426,6 +458,8 @@ LEVEL_TO_TABLE = {
     INFO_LEVEL: "log_info",
     SUCCESS_LEVEL: "log_info",
     DEBUG_LEVEL: "log_debug",
+    PRIMARY_LEVEL: "log_primary",
+    DANGER_LEVEL: "log_danger",
 }
 
 # ==================== IPython/Jupyter Compatibility ====================
@@ -513,6 +547,9 @@ _add_custom_level_method("EMERGENCY", EMERGENCY_LEVEL)
 _add_custom_level_method("ALERT", ALERT_LEVEL)
 _add_custom_level_method("NOTICE", NOTICE_LEVEL)
 _add_custom_level_method("FATAL", FATAL_LEVEL)
+_add_custom_level_method("SUCCESS", SUCCESS_LEVEL)
+_add_custom_level_method("PRIMARY", PRIMARY_LEVEL)
+_add_custom_level_method("DANGER", DANGER_LEVEL)
 
 # ==================== Icon Support ====================
 
@@ -524,9 +561,10 @@ def print_traceback(exc_info, padding_left = 0, show_datetime = True, show_emoji
             console = Console()
     except Exception:
         # fallback plain
-        print("".join(traceback.format_exception(*exc_info)))
-        return
-    
+        # print("".join(traceback.format_exception(*exc_info)))
+        # return
+        return print_traceback_ansi(exc_info, padding_left = padding_left, show_datetime = show_datetime, show_emoji = show_emoji, emoji=emoji)
+
     exc_type, exc_value, tb_details = exc_info
         
     if padding_left == None:
@@ -534,6 +572,7 @@ def print_traceback(exc_info, padding_left = 0, show_datetime = True, show_emoji
     terminal_width = shutil.get_terminal_size()[0]
     icon = emoji + ' ' if show_emoji else ' '
     timestamp = ''
+    
     # Timestamp
     if show_datetime:
         timestamp = datetime.now().strftime("[bold #FF00FF]%Y[/]-[bold #0055FF]%m[/]-[bold #FF55FF]%d[/] [bold #FFFF00]%H[/]:[bold #FF5500]%M[/]:[bold #AAAAFF]%S[/].[bold #00FF00]%f[/]")
@@ -611,6 +650,22 @@ def print_traceback_ansi(exc_info, padding_left: int = 0, show_datetime: bool = 
         for sub in str(line).splitlines():
             sys.stdout.write(f"{tb_color}{' ' * max(4, padding_left)}{sub}{reset}\n")
 
+def print_exception(e: Exception = None, *args, **kwargs):
+    """
+    Convenience function to print current exception.
+    """
+    if not e:
+        return print_traceback(
+            sys.exc_info(),
+            *args,
+            **kwargs
+        )
+    return print_traceback(
+        sys.exc_info(),
+        *args[2:],
+        **kwargs
+    )
+        
 class Icon:
     """Icon mappings for different log levels."""
     debug     = "🪲"
@@ -713,7 +768,7 @@ class CustomLogger(logging.Logger):
         self._log(logging.INFO, msg, args, stacklevel=3, **kwargs)
 
     def success(self, msg, *args, **kwargs):
-        self._log(logging.INFO, msg, args, stacklevel=3, **kwargs)
+        self._log(SUCCESS_LEVEL, msg, args, stacklevel=3, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
         self._log(logging.WARNING, msg, args, stacklevel=3, **kwargs)
@@ -723,7 +778,13 @@ class CustomLogger(logging.Logger):
 
     def critical(self, msg, *args, **kwargs):
         self._log(logging.CRITICAL, msg, args, stacklevel=3, **kwargs)
-        
+
+    def primary(self, msg, *args, **kwargs):
+        self._log(PRIMARY_LEVEL, msg, args, stacklevel=3, **kwargs)
+
+    def danger(self, msg, *args, **kwargs):
+        self._log(DANGER_LEVEL, msg, args, stacklevel=3, **kwargs)
+
     def exception(self, msg, *args, exc_info=True, **kwargs):
         """Log an exception with traceback using rich formatting."""
         if exc_info is True or str(kwargs.get("tb", None)).lower() in ["1", "true", "yes", "ok"]:
