@@ -50,7 +50,7 @@ dev = [
 [project.urls]
 Homepage = "https://github.com/cumulus13/richcolorlog"
 Repository = "https://github.com/cumulus13/richcolorlog"
-Documentation = "https://github.com/cumulus13/richcolorlog#readme"
+Documentation = "https://richcolorlog.readthedocs.io"
 "Bug Tracker" = "https://github.com/cumulus13/richcolorlog/issues"
 
 [tool.setuptools]
