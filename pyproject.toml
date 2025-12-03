@@ -7,7 +7,7 @@ name = "richcolorlog"
 dynamic = ["version"]
 description = "A beautiful and feature-rich logging package using Rich library"
 readme = "README.md"
-license = "MIT"
+license = {text="MIT"}
 authors = [
     {name = "Hadi Cahyadi", email = "cumulus13@gmail.com"}
 ]
