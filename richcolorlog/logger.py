@@ -17,6 +17,8 @@ import ctypes
 import inspect
 import shutil
 import socket
+import hashlib
+import time
 import json
 from typing import Optional, Union, Iterable, List, Dict, Any, Callable
 from types import ModuleType
@@ -1372,33 +1374,202 @@ class ZeroMQHandler(logging.Handler):
             self.context.term()
 
 class SyslogHandler(logging.handlers.SysLogHandler):
-    """Enhanced Syslog handler with proper severity mapping."""
+    """Enhanced Syslog handler with message chunking for large messages over UDP."""
     
-    def __init__(self, host='localhost', port=514, facility=logging.handlers.SysLogHandler.LOG_USER, 
-                 level=logging.DEBUG):
-        super().__init__(address=(host, port), facility=facility)
+    # RFC 5424 recommends max 2KB, but we'll use conservative 1400 bytes
+    # to avoid IP fragmentation (MTU is typically 1500 bytes)
+    MAX_CHUNK_SIZE = 1400
+    
+    def __init__(self, host='localhost', port=514, 
+                 facility=logging.handlers.SysLogHandler.LOG_USER, 
+                 level=logging.DEBUG,
+                 max_chunk_size=None,
+                 chunk_delay=0.001):  # 1ms delay between chunks
+        
+        self.max_chunk_size = max_chunk_size or self.MAX_CHUNK_SIZE
+        self.chunk_delay = chunk_delay
+        
+        # Initialize parent without connecting yet
+        self.address = (host, port)
+        self.facility = facility
+        self.socktype = socket.SOCK_DGRAM
+        self.unixsocket = False
+        
+        # Create socket with larger buffer
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # Increase send buffer size (in bytes)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 65536)
+        
+        logging.Handler.__init__(self)
         self.setLevel(level)
+        
+        # Default ident
+        self.ident = ''
+    
+    def generate_message_id(self, msg):
+        """Generate unique message ID for chunked messages."""
+        return hashlib.md5(f"{msg}{time.time()}".encode()).hexdigest()[:8]
+    
+    def chunk_message(self, msg, priority_header, chunk_size):
+        """Split message into chunks with metadata."""
+        # Remove priority header and null terminator from original message
+        if msg.startswith('<') and '>' in msg:
+            priority_end = msg.index('>') + 1
+            content = msg[priority_end:].rstrip('\000')
+        else:
+            content = msg.rstrip('\000')
+        
+        # Calculate available space per chunk
+        # Format: <priority>ident[MSG_ID:chunk/total] content\000
+        msg_id = self.generate_message_id(content)
+        
+        # Estimate overhead: priority_header + ident + [MSG_ID:X/Y] + \000
+        # We'll reserve 50 bytes for metadata
+        metadata_overhead = len(priority_header) + len(self.ident) + 50
+        available_per_chunk = chunk_size - metadata_overhead
+        
+        if available_per_chunk <= 0:
+            available_per_chunk = chunk_size // 2  # Fallback
+        
+        # Split content into chunks
+        chunks = []
+        for i in range(0, len(content), available_per_chunk):
+            chunks.append(content[i:i+available_per_chunk])
+        
+        total_chunks = len(chunks)
+        
+        # Build chunked messages
+        chunked_messages = []
+        for idx, chunk in enumerate(chunks, 1):
+            chunk_header = f"[{msg_id}:{idx}/{total_chunks}] "
+            chunked_msg = f"{priority_header}{self.ident}{chunk_header}{chunk}\000"
+            chunked_messages.append(chunked_msg)
+        
+        return chunked_messages
     
     def emit(self, record):
-        """Emit log record to syslog with proper severity."""
+        """Emit log record to syslog with chunking support for large messages."""
         try:
+            # Map log level to syslog severity
+            SYSLOG_SEVERITY_MAP = {
+                logging.CRITICAL: 2,  # Critical
+                logging.ERROR: 3,     # Error
+                logging.WARNING: 4,   # Warning
+                logging.INFO: 6,      # Informational
+                logging.DEBUG: 7      # Debug
+            }
+            
             severity = SYSLOG_SEVERITY_MAP.get(record.levelno, 7)
             priority = self.encodePriority(self.facility, severity)
+            priority_header = f'<{priority}>'
+            
+            # Format message
             msg = self.format(record)
             msg = self.ident + msg + '\000'
             msg = f'<{priority}>{msg}'
             
-            if self.unixsocket:
-                try:
-                    self.socket.send(msg.encode('utf-8'))
-                except OSError:
-                    self.socket.close()
-                    self._connect_unixsocket(self.address)
-                    self.socket.send(msg.encode('utf-8'))
+            msg_bytes = msg.encode('utf-8')
+            
+            # Check if message needs chunking
+            if len(msg_bytes) > self.max_chunk_size:
+                # Split into chunks
+                chunked_messages = self.chunk_message(msg, priority_header, self.max_chunk_size)
+                
+                # Send each chunk
+                for chunk in chunked_messages:
+                    chunk_bytes = chunk.encode('utf-8')
+                    try:
+                        self.socket.sendto(chunk_bytes, self.address)
+                        # Small delay to prevent packet loss
+                        if self.chunk_delay > 0:
+                            time.sleep(self.chunk_delay)
+                    except socket.error as e:
+                        print(f"Syslog chunk send error to {self.address}: {e}")
+                        print(f"Chunk size: {len(chunk_bytes)} bytes")
+                        raise
             else:
-                self.socket.sendto(msg.encode('utf-8'), self.address)
+                # Send as single message
+                if self.unixsocket:
+                    try:
+                        self.socket.send(msg_bytes)
+                    except OSError:
+                        self.socket.close()
+                        self._connect_unixsocket(self.address)
+                        self.socket.send(msg_bytes)
+                else:
+                    try:
+                        self.socket.sendto(msg_bytes, self.address)
+                    except socket.error as e:
+                        print(f"Syslog send error to {self.address}: {e}")
+                        print(f"Message size: {len(msg_bytes)} bytes")
+                        raise
+                    
         except Exception:
             self.handleError(record)
+    
+    def close(self):
+        """Close the socket."""
+        try:
+            if self.socket:
+                self.socket.close()
+        except Exception:
+            pass
+        finally:
+            logging.Handler.close(self)
+
+class ChunkedSyslogReassembler:
+    """Helper class to reassemble chunked syslog messages on receiving side."""
+    
+    def __init__(self, timeout=5.0):
+        self.chunks = {}  # msg_id -> {chunks: dict, timestamp: float, total: int}
+        self.timeout = timeout
+    
+    def add_chunk(self, message):
+        """Add a chunk and return complete message if all chunks received."""
+        import re
+        
+        # Parse chunk header: [MSG_ID:chunk/total]
+        match = re.match(r'<\d+>.*?\[([a-f0-9]+):(\d+)/(\d+)\]\s+(.*)', message)
+        if not match:
+            # Not a chunked message, return as-is
+            return message
+        
+        msg_id, chunk_num, total_chunks, content = match.groups()
+        chunk_num = int(chunk_num)
+        total_chunks = int(total_chunks)
+        
+        # Clean up old entries
+        current_time = time.time()
+        self.chunks = {
+            mid: data for mid, data in self.chunks.items()
+            if current_time - data['timestamp'] < self.timeout
+        }
+        
+        # Initialize or update chunk storage
+        if msg_id not in self.chunks:
+            self.chunks[msg_id] = {
+                'chunks': {},
+                'timestamp': current_time,
+                'total': total_chunks
+            }
+        
+        self.chunks[msg_id]['chunks'][chunk_num] = content
+        
+        # Check if we have all chunks
+        if len(self.chunks[msg_id]['chunks']) == total_chunks:
+            # Reassemble message
+            sorted_chunks = [
+                self.chunks[msg_id]['chunks'][i] 
+                for i in range(1, total_chunks + 1)
+            ]
+            complete_message = ''.join(sorted_chunks)
+            
+            # Clean up
+            del self.chunks[msg_id]
+            
+            return complete_message
+        
+        return None  # Not complete yet
 
 class DatabaseHandler(logging.Handler):
     """Handler to send log to the database."""
