@@ -26,6 +26,8 @@ from datetime import datetime
 import threading
 from functools import lru_cache, wraps
 
+CURRENT_HANDLERS = []
+
 # import pygments if available
 try:
     from pygments import highlight
@@ -750,18 +752,235 @@ class IconFilter(logging.Filter):
         record.icon = self.LEVEL_ICON_MAP.get(record.levelno, "")
         return True
 
+# def _check_logging_disabled():
+#     global CURRENT_HANDLERS
+#     """Check environment variables to see if logging should be disabled."""
+#     NO_LOGGING = str(os.getenv('NO_LOGGING', '0')).lower() in ['1', 'true', 'yes']
+#     LOGGING_DISABLED = str(os.getenv('LOGGING', '1')).lower() in ['0', 'false', 'no']
+
+#     if NO_LOGGING or LOGGING_DISABLED:
+#         root_logger = logging.getLogger()
+#         root_logger.setLevel(logging.CRITICAL + 99999)
+#         if not CURRENT_HANDLERS: CURRENT_HANDLERS = root_logger.handlers
+#         if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
+#             print(f"CURRENT_HANDLERS [0]: {CURRENT_HANDLERS}")
+#             print(f"CURRENT_LEVEL [0.1]: {root_logger.getEffectiveLevel()}")
+#             print(f"CURRENT_LEVEL [0.2]: {logging.getLevelName(root_logger.getEffectiveLevel())}")
+#             print(f"CURRENT_LEVEL [0.3]: {logging.getLogger().getEffectiveLevel()}")
+#             print(f"CURRENT_LEVEL [0.4]: {logging.getLevelName(logging.getLogger().getEffectiveLevel())}")
+#         root_logger.handlers = []
+#         return True
+#     else:
+#         root_logger = logging.getLogger()
+#         root_logger.setLevel(logging.DEBUG)        
+#         if CURRENT_HANDLERS:
+#             root_logger.handlers = CURRENT_HANDLERS
+
+#     if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
+#         print(f"CURRENT_HANDLERS [1]: {CURRENT_HANDLERS}")
+#         print(f"CURRENT_LEVEL [1.1]: {root_logger.getEffectiveLevel()}")
+#         print(f"CURRENT_LEVEL [1.2]: {logging.getLevelName(root_logger.getEffectiveLevel())}")
+#         print(f"CURRENT_LEVEL [1.3]: {logging.getLogger().getEffectiveLevel()}")
+#         print(f"CURRENT_LEVEL [1.4]: {logging.getLevelName(logging.getLogger().getEffectiveLevel())}")
+        
+#     return False
+
+# class CustomLogger(logging.Logger):
+#     def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, stacklevel=1, **kwargs):
+#         show = True
+#         if extra is None:
+#             extra = {}
+        
+#         if "show" in kwargs and not str(kwargs["show"]).lower() in ['1', 'ok', 'yes', 'true']:
+#             show = True
+#             extra["show"] = kwargs.pop("show")
+#         elif "show" in kwargs and str(kwargs["show"]).lower() in ['0', 'no', 'false']:
+#             show = False
+#             extra["show"] = kwargs.pop("show")
+
+#         if str(os.getenv("RICHCOLORLOG_DEBUG", "0")).lower() in ["1", "true", "ok", "yes"]:
+#             print(f"show: {show}")
+#         IS_DISABLE = _check_logging_disabled()
+#         if show != None and isinstance(show, bool):
+#             if show:
+#                 IS_DISABLE = False
+#             else:
+#                 IS_DISABLE = True
+#         if "lexer" in kwargs:
+#             extra["lexer"] = kwargs.pop("lexer")
+#         if "tb" in kwargs:
+#             extra["tb"] = kwargs.pop("tb")
+#         if "type" in kwargs:
+#             extra["type"] = kwargs.pop("type")
+#         if str(os.getenv("RICHCOLORLOG_DEBUG", "0")).lower() in ["1", "true", "ok", "yes"]:
+#             print(f"_check_logging_disabled(): {_check_logging_disabled()}")
+#             print(f"show: {show}")
+#             print(f"level: {level}")
+
+#         if str(os.getenv("RICHCOLORLOG_DEBUG", "0")).lower() in ["1", "true", "ok", "yes"]:
+#             print(f"IS_DISABLE: {IS_DISABLE}")
+        
+#         if not IS_DISABLE:
+#             if os.getenv("NO_LOGGING"): os.environ.pop("NO_LOGGING")
+#             os.environ.update({"LOGGING":"1"})
+#             super()._log(level, msg, args, exc_info, extra, stack_info, stacklevel)
+#             if _check_logging_disabled():
+#                 if os.getenv("NO_LOGGING"): os.environ.pop("LOGGING")
+#                 os.environ.update({"NO_LOGGING":"1"})
+#         if str(os.getenv("RICHCOLORLOG_DEBUG", "0")).lower() in ["1", "true", "ok", "yes"]:
+#             print("-"*os.get_terminal_size()[0])
+
+#     def debug(self, msg, *args, **kwargs):
+#         self._log(logging.DEBUG, msg, args, stacklevel=3, **kwargs)
+
+#     def info(self, msg, *args, **kwargs):
+#         self._log(logging.INFO, msg, args, stacklevel=3, **kwargs)
+
+#     def success(self, msg, *args, **kwargs):
+#         self._log(SUCCESS_LEVEL, msg, args, stacklevel=3, **kwargs)
+
+#     def warning(self, msg, *args, **kwargs):
+#         self._log(logging.WARNING, msg, args, stacklevel=3, **kwargs)
+
+#     def error(self, msg, *args, **kwargs):
+#         self._log(logging.ERROR, msg, args, stacklevel=3, **kwargs)
+
+#     def critical(self, msg, *args, **kwargs):
+#         self._log(logging.CRITICAL, msg, args, stacklevel=3, **kwargs)
+
+#     def primary(self, msg, *args, **kwargs):
+#         self._log(PRIMARY_LEVEL, msg, args, stacklevel=3, **kwargs)
+
+#     def danger(self, msg, *args, **kwargs):
+#         self._log(DANGER_LEVEL, msg, args, stacklevel=3, **kwargs)
+
+#     def exception(self, msg, *args, exc_info=True, **kwargs):
+#         """Log an exception with traceback using rich formatting."""
+#         if exc_info is True or str(kwargs.get("tb", None)).lower() in ["1", "true", "yes", "ok"]:
+#             exc_info = sys.exc_info()
+#         self._log(logging.ERROR, msg, args, exc_info=exc_info, stacklevel=3, **kwargs)
+#         # Use rich traceback for better formatting
+#         # _print_traceback_rich(exc_info)
+
+def _is_logging_disabled():
+    """Check environment variables to see if logging should be disabled."""
+    NO_LOGGING = str(os.getenv('NO_LOGGING', '0')).lower() in ['1', 'true', 'yes']
+    LOGGING_DISABLED = str(os.getenv('LOGGING', '1')).lower() in ['0', 'false', 'no']
+    
+    return NO_LOGGING or LOGGING_DISABLED
+
+
+def _setup_logging_state(enable):
+    """Setup logging state (enable or disable)."""
+    global CURRENT_HANDLERS
+    
+    root_logger = logging.getLogger()
+    debug_mode = str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true']
+    
+    if not enable:
+        # Save handlers before clearing them
+        if not CURRENT_HANDLERS:
+            CURRENT_HANDLERS = root_logger.handlers.copy()
+        
+        # Disable logging
+        root_logger.setLevel(logging.CRITICAL + 99999)
+        root_logger.handlers = []
+        
+        if debug_mode:
+            print(f"LOGGING DISABLED - Level: {logging.getLevelName(root_logger.getEffectiveLevel())}")
+    else:
+        # Enable logging
+        root_logger.setLevel(logging.DEBUG)
+        
+        # Restore handlers if they were saved
+        if CURRENT_HANDLERS and not root_logger.handlers:
+            root_logger.handlers = CURRENT_HANDLERS.copy()
+        
+        if debug_mode:
+            print(f"LOGGING ENABLED - Level: {logging.getLevelName(root_logger.getEffectiveLevel())}")
+
+
 class CustomLogger(logging.Logger):
     def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, stacklevel=1, **kwargs):
         if extra is None:
             extra = {}
+        
+        # Determine if this specific log should be shown
+        force_show = None
+        if "show" in kwargs:
+            show_value = str(kwargs["show"]).lower()
+            if show_value in ['0', 'no', 'false']:
+                force_show = False
+            elif show_value in ['1', 'ok', 'yes', 'true']:
+                force_show = True
+            extra["show"] = kwargs.pop("show")
+        
+        # Extract custom parameters
         if "lexer" in kwargs:
             extra["lexer"] = kwargs.pop("lexer")
         if "tb" in kwargs:
             extra["tb"] = kwargs.pop("tb")
         if "type" in kwargs:
             extra["type"] = kwargs.pop("type")
-        if not _check_logging_disabled():
-            super()._log(level, msg, args, exc_info, extra, stack_info, stacklevel)
+        
+        # Debug output
+        debug_mode = str(os.getenv("RICHCOLORLOG_DEBUG", "0")).lower() in ["1", "true", "ok", "yes"]
+        if debug_mode:
+            print(f"force_show: {force_show}, level: {level}")
+        
+        # Determine if we should log this message
+        should_log = True
+        
+        if force_show is False:
+            # Explicitly hide this message
+            should_log = False
+        elif force_show is True:
+            # Explicitly show this message - ALWAYS log regardless of global settings
+            should_log = True
+        else:
+            # Use global settings
+            should_log = not _is_logging_disabled()
+        
+        if debug_mode:
+            print(f"should_log: {should_log}")
+        
+        # Log the message if we should
+        if should_log:
+            # Temporarily enable logging for this message if needed
+            was_disabled = _is_logging_disabled()
+            
+            if was_disabled or force_show is True:
+                # Need to temporarily enable logging
+                original_no_logging = os.getenv("NO_LOGGING")
+                original_logging = os.getenv("LOGGING")
+                
+                # Force enable
+                os.environ["LOGGING"] = "1"
+                if "NO_LOGGING" in os.environ:
+                    del os.environ["NO_LOGGING"]
+                
+                _setup_logging_state(True)
+                
+                # Do the actual logging
+                super()._log(level, msg, args, exc_info, extra, stack_info, stacklevel)
+                
+                # Restore original state if it was disabled
+                if was_disabled:
+                    if original_no_logging:
+                        os.environ["NO_LOGGING"] = original_no_logging
+                    if original_logging:
+                        os.environ["LOGGING"] = original_logging
+                    else:
+                        if "LOGGING" in os.environ:
+                            del os.environ["LOGGING"]
+                    
+                    _setup_logging_state(False)
+            else:
+                # Logging is already enabled, just log normally
+                super()._log(level, msg, args, exc_info, extra, stack_info, stacklevel)
+        
+        if debug_mode:
+            print("-" * os.get_terminal_size()[0])
 
     def debug(self, msg, *args, **kwargs):
         self._log(logging.DEBUG, msg, args, stacklevel=3, **kwargs)
@@ -770,6 +989,8 @@ class CustomLogger(logging.Logger):
         self._log(logging.INFO, msg, args, stacklevel=3, **kwargs)
 
     def success(self, msg, *args, **kwargs):
+        # Assuming SUCCESS_LEVEL is defined elsewhere
+        SUCCESS_LEVEL = 25
         self._log(SUCCESS_LEVEL, msg, args, stacklevel=3, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
@@ -782,18 +1003,20 @@ class CustomLogger(logging.Logger):
         self._log(logging.CRITICAL, msg, args, stacklevel=3, **kwargs)
 
     def primary(self, msg, *args, **kwargs):
+        # Assuming PRIMARY_LEVEL is defined elsewhere
+        PRIMARY_LEVEL = 35
         self._log(PRIMARY_LEVEL, msg, args, stacklevel=3, **kwargs)
 
     def danger(self, msg, *args, **kwargs):
+        # Assuming DANGER_LEVEL is defined elsewhere
+        DANGER_LEVEL = 45
         self._log(DANGER_LEVEL, msg, args, stacklevel=3, **kwargs)
 
     def exception(self, msg, *args, exc_info=True, **kwargs):
-        """Log an exception with traceback using rich formatting."""
-        if exc_info is True or str(kwargs.get("tb", None)).lower() in ["1", "true", "yes", "ok"]:
+        """Log an exception with traceback."""
+        if exc_info is True or str(kwargs.get("tb", "")).lower() in ["1", "true", "yes", "ok"]:
             exc_info = sys.exc_info()
         self._log(logging.ERROR, msg, args, exc_info=exc_info, stacklevel=3, **kwargs)
-        # Use rich traceback for better formatting
-        # _print_traceback_rich(exc_info)
 
 class CustomFormatter(logging.Formatter):
     """Custom formatter with ANSI color codes for different log levels."""
@@ -853,7 +1076,7 @@ class CustomFormatter(logging.Formatter):
         show_path: bool = True,
         show_icon: bool = True,
         icon_first: bool = True,
-        lexer: str = '',
+        lexer: Optional[str] = None,
         use_colors: bool = True,
         # custom colors
         emergency_color: str = '',        
@@ -1133,18 +1356,6 @@ class RichColorLogFormatter(CustomRichFormatter):
             return self._base_formatter.format(record)
 
         return super().format(record)
-
-def _check_logging_disabled():
-    """Check environment variables to see if logging should be disabled."""
-    NO_LOGGING = str(os.getenv('NO_LOGGING', '0')).lower() in ['1', 'true', 'yes']
-    LOGGING_DISABLED = str(os.getenv('LOGGING', '1')).lower() in ['0', 'false', 'no']
-
-    if NO_LOGGING or LOGGING_DISABLED:
-        root_logger = logging.getLogger()
-        root_logger.setLevel(logging.CRITICAL + 99999)
-        root_logger.handlers = []
-        return True
-    return False
 
 class LevelBasedFileFormatter(logging.Formatter):
     """Formatter with different formats for different log levels."""
@@ -2499,6 +2710,8 @@ class RichColorLogHandler(RichHandler):
             self.console.print("-" * terminal_width)
 
     def emit(self, record):
+        if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
+            print("RichColorLogHandler -> emit -> calling ...")
         """Emit log record with proper traceback handling."""
         if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
             print(f"DEBUG: show_icon={self.show_icon}, icon_first={self.icon_first}")
@@ -2734,6 +2947,9 @@ class RichColorLogHandler(RichHandler):
     def render_message(self, record, message):
         """Render message with syntax highlighting and style level."""
         
+        if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
+            print("RichColorLogHandler -> render_message -> calling ...")
+
         lexer_name = getattr(record, "lexer", None) or self.lexer
         style = self.LEVEL_STYLES.get(record.levelno, "")
         
@@ -3226,7 +3442,7 @@ def setup_logging(
     if name:
         logger.propagate = False
     
-    if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'yes']: print(f"logger.handlers: {logger.handlers}")
+    if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'yes']: print(f"LOGGER.HANDLERS: {logger.handlers}")
     return logger
 
 def get_def() -> str:
