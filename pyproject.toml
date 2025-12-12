@@ -8,9 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "richcolorlog"
-dynamic = [
-    "version",
-]
+version = "1.44.30"
 description = "A beautiful and feature-rich logging package using Rich library"
 readme = "README.md"
 keywords = [
@@ -40,7 +38,6 @@ requires-python = ">=3.7"
 dependencies = [
     "rich>=10.0.0",
 ]
-version = "1.44.29"
 authors = [
     { name = "Hadi Cahyadi", email = "cumulus13@gmail.com" },
 ]
@@ -73,9 +70,6 @@ Documentation = "https://richcolorlog.readthedocs.io"
 packages = [
     "richcolorlog",
 ]
-
-[tool.setuptools.dynamic.version]
-attr = "richcolorlog.__version__"
 
 [tool.black]
 line-length = 88

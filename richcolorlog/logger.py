@@ -752,123 +752,12 @@ class IconFilter(logging.Filter):
         record.icon = self.LEVEL_ICON_MAP.get(record.levelno, "")
         return True
 
-# def _check_logging_disabled():
-#     global CURRENT_HANDLERS
-#     """Check environment variables to see if logging should be disabled."""
-#     NO_LOGGING = str(os.getenv('NO_LOGGING', '0')).lower() in ['1', 'true', 'yes']
-#     LOGGING_DISABLED = str(os.getenv('LOGGING', '1')).lower() in ['0', 'false', 'no']
-
-#     if NO_LOGGING or LOGGING_DISABLED:
-#         root_logger = logging.getLogger()
-#         root_logger.setLevel(logging.CRITICAL + 99999)
-#         if not CURRENT_HANDLERS: CURRENT_HANDLERS = root_logger.handlers
-#         if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
-#             print(f"CURRENT_HANDLERS [0]: {CURRENT_HANDLERS}")
-#             print(f"CURRENT_LEVEL [0.1]: {root_logger.getEffectiveLevel()}")
-#             print(f"CURRENT_LEVEL [0.2]: {logging.getLevelName(root_logger.getEffectiveLevel())}")
-#             print(f"CURRENT_LEVEL [0.3]: {logging.getLogger().getEffectiveLevel()}")
-#             print(f"CURRENT_LEVEL [0.4]: {logging.getLevelName(logging.getLogger().getEffectiveLevel())}")
-#         root_logger.handlers = []
-#         return True
-#     else:
-#         root_logger = logging.getLogger()
-#         root_logger.setLevel(logging.DEBUG)        
-#         if CURRENT_HANDLERS:
-#             root_logger.handlers = CURRENT_HANDLERS
-
-#     if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'True']:
-#         print(f"CURRENT_HANDLERS [1]: {CURRENT_HANDLERS}")
-#         print(f"CURRENT_LEVEL [1.1]: {root_logger.getEffectiveLevel()}")
-#         print(f"CURRENT_LEVEL [1.2]: {logging.getLevelName(root_logger.getEffectiveLevel())}")
-#         print(f"CURRENT_LEVEL [1.3]: {logging.getLogger().getEffectiveLevel()}")
-#         print(f"CURRENT_LEVEL [1.4]: {logging.getLevelName(logging.getLogger().getEffectiveLevel())}")
-        
-#     return False
-
-# class CustomLogger(logging.Logger):
-#     def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, stacklevel=1, **kwargs):
-#         show = True
-#         if extra is None:
-#             extra = {}
-        
-#         if "show" in kwargs and not str(kwargs["show"]).lower() in ['1', 'ok', 'yes', 'true']:
-#             show = True
-#             extra["show"] = kwargs.pop("show")
-#         elif "show" in kwargs and str(kwargs["show"]).lower() in ['0', 'no', 'false']:
-#             show = False
-#             extra["show"] = kwargs.pop("show")
-
-#         if str(os.getenv("RICHCOLORLOG_DEBUG", "0")).lower() in ["1", "true", "ok", "yes"]:
-#             print(f"show: {show}")
-#         IS_DISABLE = _check_logging_disabled()
-#         if show != None and isinstance(show, bool):
-#             if show:
-#                 IS_DISABLE = False
-#             else:
-#                 IS_DISABLE = True
-#         if "lexer" in kwargs:
-#             extra["lexer"] = kwargs.pop("lexer")
-#         if "tb" in kwargs:
-#             extra["tb"] = kwargs.pop("tb")
-#         if "type" in kwargs:
-#             extra["type"] = kwargs.pop("type")
-#         if str(os.getenv("RICHCOLORLOG_DEBUG", "0")).lower() in ["1", "true", "ok", "yes"]:
-#             print(f"_check_logging_disabled(): {_check_logging_disabled()}")
-#             print(f"show: {show}")
-#             print(f"level: {level}")
-
-#         if str(os.getenv("RICHCOLORLOG_DEBUG", "0")).lower() in ["1", "true", "ok", "yes"]:
-#             print(f"IS_DISABLE: {IS_DISABLE}")
-        
-#         if not IS_DISABLE:
-#             if os.getenv("NO_LOGGING"): os.environ.pop("NO_LOGGING")
-#             os.environ.update({"LOGGING":"1"})
-#             super()._log(level, msg, args, exc_info, extra, stack_info, stacklevel)
-#             if _check_logging_disabled():
-#                 if os.getenv("NO_LOGGING"): os.environ.pop("LOGGING")
-#                 os.environ.update({"NO_LOGGING":"1"})
-#         if str(os.getenv("RICHCOLORLOG_DEBUG", "0")).lower() in ["1", "true", "ok", "yes"]:
-#             print("-"*os.get_terminal_size()[0])
-
-#     def debug(self, msg, *args, **kwargs):
-#         self._log(logging.DEBUG, msg, args, stacklevel=3, **kwargs)
-
-#     def info(self, msg, *args, **kwargs):
-#         self._log(logging.INFO, msg, args, stacklevel=3, **kwargs)
-
-#     def success(self, msg, *args, **kwargs):
-#         self._log(SUCCESS_LEVEL, msg, args, stacklevel=3, **kwargs)
-
-#     def warning(self, msg, *args, **kwargs):
-#         self._log(logging.WARNING, msg, args, stacklevel=3, **kwargs)
-
-#     def error(self, msg, *args, **kwargs):
-#         self._log(logging.ERROR, msg, args, stacklevel=3, **kwargs)
-
-#     def critical(self, msg, *args, **kwargs):
-#         self._log(logging.CRITICAL, msg, args, stacklevel=3, **kwargs)
-
-#     def primary(self, msg, *args, **kwargs):
-#         self._log(PRIMARY_LEVEL, msg, args, stacklevel=3, **kwargs)
-
-#     def danger(self, msg, *args, **kwargs):
-#         self._log(DANGER_LEVEL, msg, args, stacklevel=3, **kwargs)
-
-#     def exception(self, msg, *args, exc_info=True, **kwargs):
-#         """Log an exception with traceback using rich formatting."""
-#         if exc_info is True or str(kwargs.get("tb", None)).lower() in ["1", "true", "yes", "ok"]:
-#             exc_info = sys.exc_info()
-#         self._log(logging.ERROR, msg, args, exc_info=exc_info, stacklevel=3, **kwargs)
-#         # Use rich traceback for better formatting
-#         # _print_traceback_rich(exc_info)
-
 def _is_logging_disabled():
     """Check environment variables to see if logging should be disabled."""
     NO_LOGGING = str(os.getenv('NO_LOGGING', '0')).lower() in ['1', 'true', 'yes']
     LOGGING_DISABLED = str(os.getenv('LOGGING', '1')).lower() in ['0', 'false', 'no']
     
     return NO_LOGGING or LOGGING_DISABLED
-
 
 def _setup_logging_state(enable):
     """Setup logging state (enable or disable)."""
@@ -898,7 +787,6 @@ def _setup_logging_state(enable):
         
         if debug_mode:
             print(f"LOGGING ENABLED - Level: {logging.getLevelName(root_logger.getEffectiveLevel())}")
-
 
 class CustomLogger(logging.Logger):
     def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, stacklevel=1, **kwargs):
@@ -1255,7 +1143,14 @@ class CustomRichFormatter(logging.Formatter):
         NOTICE_LEVEL: "black on #00FFFF",
     })
 
-    def __init__(self, lexer: Optional[str] = None, show_background: bool = True, theme: str = "fruity", icon_first: bool = True):
+    def __init__(
+        self,
+        lexer: Optional[str] = None,
+        show_background: bool = True,
+        theme: str = "fruity",
+        icon_first: bool = True
+        ):
+        
         super().__init__()
         self.lexer = lexer
         self.theme = theme
@@ -1293,6 +1188,32 @@ class CustomRichFormatter(logging.Formatter):
             prefix = f"[{style}]{levelname} - {location}[/]"
 
         return f"{prefix} {safe_message}"
+
+class CustomLogFormatter(logging.Formatter):
+    """Enhanced Rich formatter with syntax highlighting support."""
+    
+    def __init__(self, icon_first: bool = True):
+        super().__init__()
+        self.icon_first = icon_first
+        
+    @performance_monitor
+    def format(self, record: logging.LogRecord) -> str:
+        """Format log record with Rich styling."""
+        levelname = record.levelname
+        location = f"({record.filename}:{record.lineno})"
+        
+        # Get original message (already processed by IconFilter if icon_first=False)
+        raw_message = record.getMessage()
+        
+        # Get icon only if icon_first=True
+        icon = getattr(record, 'icon', "")
+
+        if self.icon_first and icon:
+            prefix = f"{icon} {levelname} - {location}"
+        else:
+            prefix = f"{levelname} - {location}"
+
+        return f"{prefix} {raw_message}"
 
 class RichColorLogFormatter(CustomRichFormatter):
     """Adapter formatter for backward compatibility with standard logging.Formatter."""
@@ -1357,17 +1278,22 @@ class RichColorLogFormatter(CustomRichFormatter):
 
         return super().format(record)
 
-class LevelBasedFileFormatter(logging.Formatter):
+class LevelBasedFileFormatter(CustomLogFormatter):
     """Formatter with different formats for different log levels."""
     
     info_format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s (%(filename)s:%(lineno)d)"
     debug_format = "%(asctime)s - %(levelname)s - %(name)s - %(process)d - %(thread)d - %(funcName)s - %(message)s (%(pathname)s:%(lineno)d)"
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, icon_first: bool = True):
+
+        super().__init__(icon_first)
+
+        self.info_format = "%(icon)s " + self.info_format if icon_first else self.info_format + " %(icon)s"
+        self.debug_format = "%(icon)s " + self.debug_format if icon_first else self.debug_format + " %(icon)s"
+        
         self.info_formatter = logging.Formatter(self.info_format)
         self.debug_formatter = logging.Formatter(self.debug_format)
-    
+
     def format(self, record):
         if record.levelno <= logging.DEBUG:
             return self.debug_formatter.format(record)
@@ -3155,6 +3081,8 @@ def setup_logging(
     log_file: bool = False,
     log_file_name: Optional[str] = None,
     log_file_level: Union[str, int] = logging.INFO,
+    max_bytes: Union[int, None] = 10485760,
+    backup_count: Union[int, None] = 5,
 
     # RabbitMQ
     rabbitmq=False,
@@ -3197,7 +3125,8 @@ def setup_logging(
     db_user='postgres',
     db_password='',
     db_level=logging.DEBUG,
-    HANDLER: RichColorLogHandler = RichColorLogHandler,
+
+    HANDLER: Optional[Union[RichColorLogHandler, list, tuple]] = [],
 
     emergency_color: str = '',        
     alert_color: str = '',        
@@ -3268,8 +3197,21 @@ def setup_logging(
         if isinstance(log_file_level, str):
             log_file_level = getattr(logging, log_file_level.upper(), logging.INFO)
         
-        file_handler = logging.FileHandler(log_file_name, encoding="utf-8")
+        # file_handler = logging.FileHandler(log_file_name, encoding="utf-8")
+        file_handler = logging.handlers.RotatingFileHandler(
+            log_file_name, 
+            encoding="utf-8",
+            maxBytes=max_bytes,
+            backupCount=backup_count
+        )
         file_handler.setLevel(log_file_level)
+
+        if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'yes']: print(f"icon_first: {icon_first}")
+
+        if icon_first:
+            icon_filter = IconFilter(icon_first=True)
+            file_handler.addFilter(icon_filter)
+
         file_handler.setFormatter(LevelBasedFileFormatter())
         logger.addHandler(file_handler)
     
@@ -3336,6 +3278,65 @@ def setup_logging(
             rich_handler.addFilter(icon_filter)
 
         logger.addHandler(rich_handler)
+    elif isinstance(HANDLER, (list or tuple)):
+        if RichColorLogHandler not in HANDLER:
+            if RICH_AVAILABLE:
+                rich_handler = RichColorLogHandler(
+                    lexer=lexer,
+                    show_background=show_background,
+                    render_emoji=render_emoji,
+                    show_icon=show_icon,
+                    icon_first=icon_first, 
+                    theme=theme,
+                    format_template=format_template,
+                    level_in_message=level_in_message,
+                
+                    # RESTORE all RichHandler arguments:
+                    level=level,
+                    console=console,
+                    show_time=show_time,
+                    omit_repeated_times=omit_repeated_times,
+                    show_level=show_level,
+                    show_path=show_path,
+                    enable_link_path=enable_link_path,
+                    highlighter=highlighter,
+                    markup=markup,
+                    rich_tracebacks=rich_tracebacks,
+                    tracebacks_width=tracebacks_width,
+                    tracebacks_code_width=tracebacks_code_width,
+                    tracebacks_extra_lines=tracebacks_extra_lines,
+                    tracebacks_theme=tracebacks_theme,
+                    tracebacks_word_wrap=tracebacks_word_wrap,
+                    tracebacks_show_locals=tracebacks_show_locals,
+                    tracebacks_suppress=tracebacks_suppress,
+                    tracebacks_max_frames=tracebacks_max_frames,
+                    locals_max_length=locals_max_length,
+                    locals_max_string=locals_max_string,
+                    log_time_format=log_time_format,
+                    keywords=keywords,
+                    emergency_color=emergency_color,
+                    alert_color=alert_color,
+                    critical_color=critical_color,
+                    error_color=error_color,
+                    warning_color=warning_color,
+                    fatal_color=fatal_color,
+                    notice_color=notice_color,
+                    debug_color=debug_color,
+                    info_color=info_color,
+                    show_type=show_type
+
+                )
+
+                rich_handler.setLevel(level)
+                if icon_first:
+                    icon_filter = IconFilter(icon_first=True)
+                    rich_handler.addFilter(icon_filter)
+
+                logger.addHandler(rich_handler)
+
+            for handler in HANDLER:
+                handler.setLevel(level)
+                logger.addHandler(handler)
     else:
         console_handler = AnsiLogHandler(
             lexer=lexer,
@@ -3443,6 +3444,7 @@ def setup_logging(
         logger.propagate = False
     
     if str(os.getenv('RICHCOLORLOG_DEBUG', '0')).lower() in ['1', 'true', 'yes']: print(f"LOGGER.HANDLERS: {logger.handlers}")
+    
     return logger
 
 def get_def() -> str:
