@@ -94,7 +94,7 @@ pip install -e .
     ⛔ [10/04/25 14:12:07] WARNING  This is a warning message
     📢 [10/04/25 14:12:07] NOTICE   This is a notice message
     🔔 [10/04/25 14:12:07] INFO     This is an info message
-    🐛 [10/04/25 14:12:07] DEBUG    This is a debug message
+    🪲 [10/04/25 14:12:07] DEBUG    This is a debug message
 
 >>> FORMAT = "%(icon)s %(asctime)s - %(name)s - %(process)d - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
 >>> logger = setup_logging(show_background=True, format_template=FORMAT, name="TEST")
@@ -111,7 +111,7 @@ pip install -e .
 
 >>> logger.debug("SELECT * FROM users", lexer="sql")  # Syntax highlighted!
 >>> #output
-    🐛 [10/04/25 15:12:35] TEST 15448 DEBUG                                
+    🪲 [10/04/25 15:12:35] TEST 15448 DEBUG                                
     SELECT * FROM users
 
 ```
