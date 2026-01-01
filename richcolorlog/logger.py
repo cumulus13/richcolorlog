@@ -855,9 +855,9 @@ class CustomLogger(logging.Logger):
                 # Restore original state if it was disabled
                 if was_disabled:
                     if original_no_logging:
-                        os.environ["NO_LOGGING"] = original_no_logging
+                        os.environ["NO_LOGGING"] = str(original_no_logging)
                     if original_logging:
-                        os.environ["LOGGING"] = original_logging
+                        os.environ["LOGGING"] = str(original_logging)
                     else:
                         if "LOGGING" in os.environ:
                             del os.environ["LOGGING"]
