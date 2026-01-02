@@ -1,6 +1,6 @@
-=============
+===============
 Formatters API
-=============
+===============
 
 Formatter classes for formatting log records.
 

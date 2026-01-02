@@ -64,3 +64,6 @@ __pycache__/
 
 # Added entries (1 items)
 *.patch
+
+# Added entries (1 items)
+docs/_build

@@ -17,6 +17,7 @@ version = '1.0.0'
 
 # -- General configuration ---------------------------------------------------
 extensions = [
+    'sphinxcolor',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',

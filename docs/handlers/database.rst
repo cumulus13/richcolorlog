@@ -236,7 +236,7 @@ PostgreSQL
    GRANT ALL PRIVILEGES ON DATABASE app_logs TO logger;
 
    -- Connect and grant schema permissions
-   \c app_logs
+   \\c app_logs
    GRANT ALL ON SCHEMA public TO logger;
    GRANT ALL ON ALL TABLES IN SCHEMA public TO logger;
    GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO logger;

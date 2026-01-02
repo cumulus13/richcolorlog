@@ -1,6 +1,6 @@
-==========
+===========
 Formatters
-==========
+===========
 
 RichColorLog provides several formatters for different output scenarios.
 

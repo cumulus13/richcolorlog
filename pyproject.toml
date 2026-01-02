@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "richcolorlog"
-version = "1.44.32"
+version = "1.44.33"
 description = "A beautiful and feature-rich logging package using Rich library"
 readme = "README.md"
 keywords = [

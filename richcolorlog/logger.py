@@ -904,6 +904,8 @@ class CustomLogger(logging.Logger):
         """Log an exception with traceback."""
         if exc_info is True or str(kwargs.get("tb", "")).lower() in ["1", "true", "yes", "ok"]:
             exc_info = sys.exc_info()
+        if not str(os.getenv('TRACEBACK', '0')).lower() in ['1', 'true', 'yes', 'ok', 'on']:
+            kwargs.update({'show':'0'})
         self._log(logging.ERROR, msg, args, exc_info=exc_info, stacklevel=3, **kwargs)
 
 class CustomFormatter(logging.Formatter):

@@ -79,6 +79,17 @@ Basic Usage
    logger.emergency("Emergency message")
    logger.fatal("Fatal message")
    logger.success("Success message")
+   logger.primary("Primary message")
+   logger.danger("Danger message")
+
+   logger.exception("Exception message") # .exception must set TRACEBACK env var to show traceback, this should in except block
+
+   os.environ.update({'TRACEBACK': '1'})
+   try:
+      print(sys.args[1])
+   except Exception as e:
+      logger.error(e)
+      logger.exception(f"An exception occurred: {e}") 
 
 Contents
 --------
