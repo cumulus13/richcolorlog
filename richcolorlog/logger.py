@@ -2992,8 +2992,8 @@ def setup_logging_custom(
         os.environ['NO_LOGGING'] = '1'
         logging.basicConfig(level=logging.CRITICAL)
 
-    if _check_logging_disabled():
-        return logging.getLogger()
+    # if _check_logging_disabled():
+    #     return logging.getLogger()
 
     logger = logging.getLogger(name)
     logger.__class__ = CustomLogger
